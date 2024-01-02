@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Registro de Vendas</title>
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  
+ 
+<main>
+
+  <div class="container">
+<!-- Início do formulário de venda -->
+    <form id="vendaForm">
+
+      <h1>Realizar Venda</h1>
+       <!-- Campo para inserir o nome do cliente -->
+      <label for="cliente">Cliente:</label>
+      <input type="text" id="cliente" name="cliente">
+      <div id="autocomplete-list"></div>
+ <!-- Seleção do tipo de produto -->
+      <label for="tipo">Tipo de Produto:</label>
+      <select id="tipo" name="tipo" class="select" onchange="updateForm()">
+        <option value="roupa">Roupa</option>
+        <option value="objeto">Objeto</option>
+      </select>
+  <!-- Seção para detalhes da roupa -->
+      <div id="roupaDiv">
+         <!-- Seleção do gênero da roupa -->
+        <label for="genero" >Gênero:</label>
+        <select id="genero" name="genero" class="select" onchange="updateCategoria()">
+          <option value="feminina" class="op">Feminina</option>
+          <option value="masculina">Masculina</option>
+        </select>
+
+      
+<!-- Seleção da categoria da roupa -->
+        <label for="categoria" >Categoria da Roupa:</label>
+        <select id="categoria" name="categoria"  class="select">
+            <!-- Opções de categorias -->
+          <option value="camisa">Camisa</option>
+          <option value="vestido">Vestido</option>
+          <option value="short">Short</option>
+          <option value="calca">Calça</option>
+          <option value="blusa">Blusa</option>
+          <option value="cropped">Cropped</option>
+          <option value="babydoll">Babydoll</option>
+          <option value="calcinha">Calcinha</option>
+          <option value="sutia">Sutiã</option>
+          <option value="jaqueta">Jaqueta</option>
+          <option value="macacao">Macacão</option>
+          <option value="saia">Saia</option>
+        </select>
+
+      </div>
+
+          <!-- Campo para inserir a marca da roupa -->
+      <div id="marcaDiv">
+        <label for="marca">Marca da Roupa:</label>
+        <input type="text" name="marca" id="marca">
+      </div>
+ <!-- Seção para detalhes do objeto (inicialmente oculta) -->
+      <div id="objetoDiv" style="display: none;">
+        <label for="descricao" style="display: block;">Descrição do Objeto:</label>
+        <input type="text" id="descricao" name="descricao" style="display: block;">
+      </div>
+
+   <!-- Campo para inserir o preço de venda -->
+      <label for="preco">Preço de Venda:</label>
+      <input type="number" id="preco" name="preco" step="0.01">
+ <!-- Campo para inserir a quantidade vendida -->
+      <label for="quantidade">Quantidade Vendida:</label>
+      <input type="number" id="quantidade" name="quantidade">
+ <!-- Botão para enviar o formulário -->
+      <input type="submit" value="Realizar Venda" id="vender" >
+<!-- Link para voltar à página inicial -->
+      <div class="home">
+        <a href="../../index.html"  ><img src="../../imgs/voltar.png" alt="voltar" ></a>
+      </div>
+    
+    </form>
+
+  </div>
+
+  
+</main>
+
+  
+
+<script>
+//responsavel por mudar as categorias dependendo do genero
+function updateCategoria(){
+  const genero = document.getElementById('genero').value;
+  const categoriaSelect = document.getElementById('categoria');
+  categoriaSelect.innerHTML =''; //linpa as opçoes listadas
+  if(genero === 'feminina'){
+    // Adiciona opções para roupas femininas
+    categoriaSelect.innerHTML = `
+      <option value="camisa">Camisa</option>
+      <option value="vestido">Vestido</option>
+      <option value="short">Short</option>
+      <option value="calca">Calça</option>
+      <option value="blusa">Blusa</option>
+      <option value="cropped">Cropped</option>
+      <option value="babydoll">Babydoll</option>
+      <option value="calcinha">Calcinha</option>
+      <option value="sutia">Sutiã</option>
+      <option value="jaqueta">Jaqueta</option>
+      <option value="macacao">Macacão</option>
+      <option value="saia">Saia</option>`;
+  }
+  else if (genero === 'masculina') {
+    // Adiciona opções para roupas masculinas
+    categoriaSelect.innerHTML = `
+      <option value="camisa basica">Camisa Basica</option>
+      <option value="camisa plo">Camisa Polo</option>
+      <option value="camisa social">Camisa Social</option>
+      <option value="camiseta">Camisetas</option>
+      <option value="bermuda jeans">Bermuda Jeans</option>
+      <option value="bermudabrim">Bermuda Brim</option>
+      <option value="calca jeans ">Calça Jeans</option>
+      <option value="calça brim ">Calça Brim</option>
+      <option value="coeca">Coeca</option>
+    `;
+  }
+}
+
+
+
+function updateForm() {
+  const tipo = document.getElementById('tipo').value;
+  if (tipo === 'roupa') {
+    document.getElementById('roupaDiv').style.display = 'block';
+    document.getElementById('marcaDiv').style.display = 'block';
+    document.getElementById('objetoDiv').style.display = 'none';
+  } else if (tipo === 'objeto') {
+    document.getElementById('roupaDiv').style.display = 'none';
+    document.getElementById('marcaDiv').style.display = 'none';
+    document.getElementById('objetoDiv').style.display = 'block';
+  }
+}
+
+
+</script>
+<script src="../renderer.js"></script>
+</body>
+</html>

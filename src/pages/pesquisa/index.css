@@ -1,0 +1,149 @@
+*{
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+}
+body{
+    background: linear-gradient(to top, rgba(221, 214, 214, 0.986),rgba(65, 64, 64, 0.699) );
+}
+.container{
+    display: flex;
+}
+.lado_esquerdo{
+width: 100%;
+height: calc(100vh - 2px);
+border: solid 1px;
+display: flex;
+flex-direction: column;
+
+}
+
+.search-container{
+    width: 400px;
+    height: 85px;
+    background-color: rgba(114, 114, 114, 0.767);
+    margin-left: 3%;
+    margin-top: 2%;
+    border: solid rgba(0, 0, 0, 0.425) 1px;
+}
+h1{
+    text-align: center;
+    
+    
+    
+}
+
+#search{
+    margin-left:3%;
+    margin-top: 3%;
+    width: 60%;
+    font-size: 13pt;
+    padding: 4px;
+}
+#pesquisar{
+    width: 25%;
+    font-size: 13pt;
+    padding: 4px;
+    margin-left: 3%;
+    cursor: pointer;
+}
+
+#pesquisar:hover{
+    background-color: rgb(175, 175, 175);
+}
+
+#results {
+    max-height: 200px; /* Ajuste este valor conforme necessário */
+    overflow-y: auto;
+    margin-left: 15px;
+    margin-top: 15px;
+    width: 400px;
+    background-color:#ffffff9f ;
+}
+
+#results div{
+    font-size: 14pt;
+    font-weight: 500;
+    border: solid 1px;
+    cursor: pointer;
+    padding-left: 4px;
+}
+
+#results div:hover{
+background-color:#ccc ;
+}
+
+.lado_direito{
+    width: 100%;
+    height: calc(100vh - 2px);
+    border: solid 1px;
+    border-left: 0px;
+}
+
+#results-dados {
+    /* Adiciona algum espaço ao redor dos resultados */
+    padding: 10px;
+    /* Define a largura máxima dos resultados para evitar que eles ocupem muito espaço */
+    max-width: 400px;
+    /* Centraliza os resultados */
+    margin: 0 auto;
+}
+
+#results-dados div {
+    /* Adiciona algum espaço entre cada resultado */
+    margin-bottom: 10px;
+    /* Adiciona algum preenchimento dentro de cada resultado */
+    padding: 10px;
+    /* Adiciona uma borda ao redor de cada resultado */
+    
+    /* Arredonda os cantos da borda */
+    border-radius: 5px;
+}
+#results-dados p{
+    border: solid 1px;
+    padding: 3px;
+    background-color: #ccc;
+    font-size: 16pt;
+    font-weight:bold;
+    
+}
+#results-dados h2{
+    text-align: center;
+    margin-bottom: 6px;
+    font-size: 20pt;
+    margin-top: 6px;
+    background-color: rgb(214, 214, 236);
+
+}
+#results-dados input{
+width: 55%;
+font-size: 16pt;
+margin-top: 3px;
+
+}
+#results-dados button{
+ width: 110px;
+ font-size: 16pt;
+ margin-left: 6px;
+ margin-top: 3px;
+ background-color: rgb(8, 163, 20);
+ cursor: pointer;
+}
+#results-dados button:hover{
+    background-color: rgb(7, 221, 25);
+}
+
+a{
+position: absolute;
+ margin-bottom:10px;
+ margin-left: 30px;
+ width: 60px;
+ top: 520px;
+}
+a:hover{
+    margin-left:25px ;
+}
+
+img{
+    width: 55px;
+}

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8"> <!-- Define a codificação de caracteres para o documento -->
+    <title>Pesquisa</title> <!-- Título do documento -->
+    <link rel="stylesheet" href="index.css"> <!-- Link para o arquivo CSS -->
+</head>
+
+<body>
+    <div class="container">
+
+        <!-- Lado esquerdo onde são feitas as buscas -->
+        <div class="lado_esquerdo">
+
+            <div class="search-container">
+                <h1>Buscar</h1> <!-- Título da busca -->
+                <input type="text" id="search" placeholder="Digite o nome do cliente ou CPF"> <!-- Campo de entrada para a pesquisa -->
+                <button id="pesquisar" onclick="search()">Pesquisar</button> <!-- Botão para iniciar a pesquisa -->
+            </div>
+            
+            <!-- Div onde os resultados da pesquisa serão exibidos -->
+            <div id="results"></div>
+
+            <!-- Link para voltar à página inicial -->
+            <a href="../../index.html"><img src="../../imgs/voltar.png" alt="home"></a>
+        </div>
+
+        <!-- Lado direito do sistema de busca onde os dados são mostrados -->
+        <div class="lado_direito">
+
+            <!-- Div onde os dados da pesquisa serão exibidos -->
+            <div id="results-dados"></div>
+
+        </div>
+
+    </div>
+    
+    <!-- Link para o arquivo JavaScript -->
+    <script src="../scripts/pesquisa.js"></script>
+</body>
+</html>
