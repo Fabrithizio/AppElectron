@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Pesquisa</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+    <div class="container">
+
+        <!--lado esquesquerdo onde sao feita as buscas-->
+        <div class="lado_esquerdo">
+
+            <div class="search-container">
+                <h1>Buscar</h1>
+                <input type="text" id="search" placeholder="Digite o nome do cliente ou CPF">
+                <button id="pesquisar" onclick="search()">Pesquisar</button>
+            </div>
+            
+            <div id="results"></div>
+
+        <a href="../../index.html"><img src="../../imgs/voltar.png" alt="home"></a>
+        </div>
+
+        <!--lado direito do sistema de busca onde sao mostrados os dados-->
+        <div class="lado_direito">
+
+            <div id="results-dados"></div>
+
+        </div>
+
+    </div>
+    
+    
+    
+
+   <script src="pesquisa.js"></script>
+</body>
+</html>
