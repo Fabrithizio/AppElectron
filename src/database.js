@@ -1,7 +1,7 @@
 const sqlite3 = require('sqlite3').verbose();
 
 // Nome do banco de dados SQLite
-const dbName = 'Banco_dados.db';
+const dbName = 'banco_dados.db';
 
 // Cria uma instância do banco de dados SQLite
 const db = new sqlite3.Database(dbName);
@@ -27,27 +27,20 @@ function insertCliente({ nome, cpf, rg, endereco, telefone, email, divida }) {
 //função que coida do sistema de vendas e banco de dados
 
 function insertVenda({ cliente, tipo, genero = '', categoria = '', marca = '', descricao, preco, quantidade, dataVenda }) {
-    db.serialize(() => {
-      // Verifica se a tabela existe
-      const sql = 'SELECT name FROM sqlite_master WHERE type = "table" AND name = "vendas"';
-      const result = db.all(sql);
-  
-      if (result.length === 0) {
-        // A tabela não existe, então a cria
-        db.run('CREATE TABLE IF NOT EXISTS vendas (INTEGER PRIMARY KEY AUTOINCREMENT,cliente TEXT, tipo TEXT, genero TEXT, categoria TEXT, marca TEXT, descricao TEXT, preco REAL, quantidade INTEGER)');
-      }
-  
-      // Insere os valores no banco de dados
-      db.run('INSERT INTO vendas (cliente, tipo, genero, categoria, marca, descricao, preco, quantidade, dataVenda) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [cliente, tipo, genero, categoria, marca, descricao, preco, quantidade, dataVenda], (err) => {
-        if (err) {
-          console.error(err);
-        } else {
-          console.log('Venda inserida com sucesso.');
-        }
-      });
-    });
-  }
-  
+  db.serialize(() => {
+    // Cria a tabela vendas se não existir
+    db.run('CREATE TABLE IF NOT EXISTS vendas (id INTEGER PRIMARY KEY AUTOINCREMENT,cliente TEXT, tipo TEXT, genero TEXT, categoria TEXT, marca TEXT, descricao TEXT, preco REAL, quantidade INTEGER, dataVenda TEXT)');
+
+    // Insere os valores no banco de dados
+    db.run('INSERT INTO vendas (cliente, tipo, genero, categoria, marca, descricao, preco, quantidade, dataVenda) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [cliente, tipo, genero, categoria, marca, descricao, preco, quantidade, dataVenda], (err) => {
+      if (err) {
+        console.error(err);
+      } else {
+        console.log('Venda inserida com sucesso.');
+      }
+    });
+  });
+}
 
 
 //função para lidar com o sistema de pagamentos de clientes

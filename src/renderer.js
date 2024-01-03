@@ -50,27 +50,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
         // Exclui genero e marca dos dados enviados
         dados = { cliente, tipo, descricao, preco, quantidade, dataVenda };
       }
-        
       // Envia um evento IPC com os valores do formulário
       ipcRenderer.send('submit-venda', dados);
     });
   }
-
-  // Solicitar atividades por data
-ipcRenderer.send('get-activities-by-date', date);
-
-// Receber resultados de atividades por data
-ipcRenderer.on('activities-by-date-results', (event, rows) => {
-  // Adicione o código aqui para exibir 'rows' na sua página
-});
-
-// Solicitar atividades por cliente
-ipcRenderer.send('get-activities-by-client', clientName);
-
-// Receber resultados de atividades por cliente
-ipcRenderer.on('activities-by-client-results', (event, rows) => {
-  // Adicione o código aqui para exibir 'rows' na sua página
-});
 
 });
 
