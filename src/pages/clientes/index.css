@@ -12,10 +12,10 @@ main{
    background-color: #858484da;
    border: solid 1px;
     width: 400px;
-    height: 450px;
+    height: 480px;
     margin: auto;
     margin-top: 35px;
-border-radius: 12px;
+    border-radius: 12px;
 }
 h1{
     font-size: 25pt;
