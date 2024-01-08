@@ -58,6 +58,15 @@ ipcMain.on('registrar-pagamento', (event, { id, divida, pagamento }) => {
   });
 });
 
+// lida com o sistema de vendas a fiado
+ipcMain.on('registrar-divida', (event, { cliente, divida }) => {
+  db.serialize(() => {
+      // Adiciona o valor da dívida à dívida atual do cliente na tabela Clientes
+      db.run('UPDATE Clientes SET divida = divida + ? WHERE nome = ?', [divida, cliente]);
+  });
+});
+
+
 //responsavel pelos sistema de historio 
 ipcMain.on('get-activities-by-date', (event, date) => {
   getActivitiesByDate(date, function(rows) {

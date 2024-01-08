@@ -47,6 +47,8 @@ function insertVenda({ cliente, tipo, genero = '', categoria = '', marca = '', m
 db.run('CREATE TABLE IF NOT EXISTS Pagamentos (id INTEGER PRIMARY KEY AUTOINCREMENT, id_cliente INTEGER, data_pagamento TEXT, valor_pago REAL)');
 
 
+
+
 //coisa do sistesma de historico
 function getActivitiesByDate(date, callback) {
   let sql = `SELECT * FROM vendas

@@ -48,12 +48,4 @@
             results.appendChild(result);
         }
     });
-
-        // Obtém o método de pagamento do campo de seleção
-        var metodo_pagamento = document.getElementById('metodo-pagamento').value;
-        // Se o pagamento for a prazo, adiciona o valor da venda à dívida do cliente
-        if (metodo_pagamento === 'Fiado') {
-        // Adiciona o valor da venda à dívida do cliente
-        }
-
 })();
