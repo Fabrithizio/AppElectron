@@ -7,12 +7,9 @@
 </head>
 <body>
   
- 
 <main>
 
   <div class="container">
-
-    
 
     <form id="vendaForm">
 
@@ -20,7 +17,10 @@
       
       <label for="cliente">Cliente:</label>
       <input type="text" id="cliente" name="cliente">
-      <div id="autocomplete-list"></div>
+      <div class="container-auto-complete">
+        <div id="autocomplete-list"></div>
+      </div>
+      
 
       <label for="tipo">Tipo de Produto:</label>
       <select id="tipo" name="tipo" class="select" onchange="updateForm()">
@@ -66,6 +66,15 @@
         <input type="text" id="descricao" name="descricao" style="display: block;">
       </div>
 
+      <label for="pagamento">Método de Pagamento:</label>
+      <select id="pagamento" name="pagamento" class="select">
+        <option value="Pix">Pix</option>
+        <option value="Especie">Especie</option>
+        <option value="Fiado">Fiado</option>
+        <option value="Cartao de Credito">Cartão Debito</option>
+        <option value="Cartao de Debito">Cartão Credito</option>
+      </select>
+      
 
       <label for="preco">Preço de Venda:</label>
       <input type="number" id="preco" name="preco" step="0.01">
@@ -143,6 +152,8 @@ function updateForm() {
 
 
 </script>
+<script src="vendas.js"></script>
 <script src="../../renderer.js"></script>
+
 </body>
 </html>

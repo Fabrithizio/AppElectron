@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
       const quantidade = document.getElementById('quantidade').value;
       const dataVenda = new Date().toISOString(); 
       const tipos = document.getElementById('tipo').value;
+      const metodoPagamento = document.getElementById('pagamento').value;
 
         let dados;
           if (tipos === 'roupa') {
@@ -45,10 +46,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
         const marca = document.getElementById('marca').value;
         const categoria = document.getElementById('categoria').value;
         // Inclui genero e marca nos dados enviados
-        dados = { cliente, tipo, genero, categoria, marca, descricao, preco, quantidade, dataVenda };
+        dados = { cliente, tipo, genero, categoria, marca, metodoPagamento, descricao, preco, quantidade, dataVenda };
       } else if (tipos === 'objeto') {
         // Exclui genero e marca dos dados enviados
-        dados = { cliente, tipo, descricao, preco, quantidade, dataVenda };
+        dados = { cliente, tipo, descricao, metodoPagamento, preco, quantidade, dataVenda };
       }
       // Envia um evento IPC com os valores do formulário
       ipcRenderer.send('submit-venda', dados);

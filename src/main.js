@@ -24,7 +24,7 @@ ipcMain.on('search', (event, searchTerm) => {
 });
 
 // lida com o sistema de alto complete da parte esqueda do pesquisar
-ipcMain.on('autocomplete', (event, searchTerm) => {
+ipcMain.on('autocomplete-pesquisa', (event, searchTerm) => {
   db.all('SELECT nome FROM Clientes WHERE nome LIKE ? LIMIT 10', [searchTerm + '%'], function(err, rows) {
       if (err) {
           console.error(err);
@@ -33,6 +33,19 @@ ipcMain.on('autocomplete', (event, searchTerm) => {
       event.sender.send('autocomplete-results', rows);
   });
 });
+
+// Lida com o sistema de auto-completar o nome do cliente
+ipcMain.on('autocomplete-client-name', (event, clientName) => {
+  db.all('SELECT nome FROM Clientes WHERE nome LIKE ? LIMIT 5', [clientName + '%'], function(err, rows) {
+      if (err) {
+          console.error(err);
+          return;
+      }
+      event.sender.send('autocomplete-client-name-results', rows);
+  });
+});
+
+
 
 //coisa do sistema de pagamento da pagina pesquisar
 ipcMain.on('registrar-pagamento', (event, { id, divida, pagamento }) => {

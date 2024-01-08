@@ -11,7 +11,7 @@ function autocomplete() {
         return;
     }
     // Envia o termo de pesquisa para o processo principal para obter os resultados de auto-completar
-    ipcRenderer.send('autocomplete', searchTerm);
+    ipcRenderer.send('autocomplete-pesquisa', searchTerm);
 }
 
 // Quando a janela é carregada, adiciona os ouvintes de eventos

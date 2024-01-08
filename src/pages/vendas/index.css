@@ -17,6 +17,34 @@ h1{
     color: rgb(0, 2, 3);
 }
 
+.container-auto-complete{
+    margin-top: 3px;
+    margin-left: 23px;
+}
+
+#autocomplete-list{
+    max-height: 200px; /* Ajuste este valor conforme necessário */
+    overflow-y: auto;
+    align-items: center;
+    background-color: rgb(211, 211, 211);
+    position: absolute; /* Adicionado para fazer a lista aparecer por cima dos outros elementos */
+    width: 300px;
+}
+
+
+#autocomplete-list div{
+    font-size: 14pt;
+    font-weight: 500;
+    border: solid 1px;
+    cursor: pointer;
+    padding-left: 4px;
+}
+
+#autocomplete-list div:hover{
+    background-color:#8a8989;
+}
+
+
 #vendaForm{
     border: solid 1px rgba(0, 0, 0, 0.411);
     border-radius: 12px;

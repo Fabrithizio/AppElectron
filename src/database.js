@@ -26,13 +26,13 @@ function insertCliente({ nome, cpf, rg, endereco, telefone, email, divida }) {
 
 //função que coida do sistema de vendas e banco de dados
 
-function insertVenda({ cliente, tipo, genero = '', categoria = '', marca = '', descricao, preco, quantidade, dataVenda }) {
+function insertVenda({ cliente, tipo, genero = '', categoria = '', marca = '', metodoPagamento, descricao, preco, quantidade, dataVenda }) {
   db.serialize(() => {
     // Cria a tabela vendas se não existir
-    db.run('CREATE TABLE IF NOT EXISTS vendas (id INTEGER PRIMARY KEY AUTOINCREMENT,cliente TEXT, tipo TEXT, genero TEXT, categoria TEXT, marca TEXT, descricao TEXT, preco REAL, quantidade INTEGER, dataVenda TEXT)');
+    db.run('CREATE TABLE IF NOT EXISTS vendas (id INTEGER PRIMARY KEY AUTOINCREMENT,cliente TEXT, tipo TEXT, genero TEXT, categoria TEXT, marca TEXT,metodoPagamento TEXT, descricao TEXT, preco REAL, quantidade INTEGER, dataVenda TEXT)');
 
     // Insere os valores no banco de dados
-    db.run('INSERT INTO vendas (cliente, tipo, genero, categoria, marca, descricao, preco, quantidade, dataVenda) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [cliente, tipo, genero, categoria, marca, descricao, preco, quantidade, dataVenda], (err) => {
+    db.run('INSERT INTO vendas (cliente, tipo, genero, categoria, marca, metodoPagamento, descricao, preco, quantidade, dataVenda) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [cliente, tipo, genero, categoria, marca, metodoPagamento, descricao, preco, quantidade, dataVenda], (err) => {
       if (err) {
         console.error(err);
       } else {
