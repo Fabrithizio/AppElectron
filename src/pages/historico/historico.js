@@ -1,33 +1,40 @@
-// Inicialmente, não há transações
-var transacoes = [];
+const { ipcRenderer } = require('electron');
 
-// Função para adicionar uma transação
+// No processo principal
+function insertVenda({ cliente, tipo, genero = '', categoria = '', marca = '', metodoPagamento, descricao, preco, quantidade, dataVenda }) {
+  db.serialize(() => {
+    // Cria a tabela vendas se não existir
+    db.run('CREATE TABLE IF NOT EXISTS vendas (id INTEGER PRIMARY KEY AUTOINCREMENT,cliente TEXT, tipo TEXT, genero TEXT, categoria TEXT, marca TEXT,metodoPagamento TEXT, descricao TEXT, preco REAL, quantidade INTEGER, dataVenda TEXT)');
 
-function adicionarTransacao(transacao) {
-    // Adicione a transação ao array de transações
-    transacoes.push(transacao);
-
-    // Atualize a exibição do histórico
-    atualizarHistorico();
-
-    // Aqui você pode adicionar o código para salvar a transação no banco de dados
-    // Por exemplo:
-     db.run(`INSERT INTO Historico (NomeCliente, DataHora, TipoTransacao, ValorPago, DividaAnterior, DividaAtual) VALUES (?, ?, ?, ?, ?, ?)`,
-         [transacao.NomeCliente, transacao.DataHora, transacao.TipoTransacao, transacao.ValorPago, transacao.DividaAnterior, transacao.DividaAtual]);
+    // Insere os valores no banco de dados
+    db.run('INSERT INTO vendas (cliente, tipo, genero, categoria, marca, metodoPagamento, descricao, preco, quantidade, dataVenda) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [cliente, tipo, genero, categoria, marca, metodoPagamento, descricao, preco, quantidade, dataVenda], (err) => {
+      if (err) {
+        console.error(err);
+      } else {
+        console.log('Venda inserida com sucesso.');
+        // Emite um evento IPC com os detalhes da venda
+        mainWindow.webContents.send('venda-inserida', { cliente, tipo, genero, categoria, marca, metodoPagamento, descricao, preco, quantidade, dataVenda });
+      }
+    });
+  });
 }
 
+// No processo de renderização
+ipcRenderer.on('venda-inserida', (event, venda) => {
+  // Adiciona a venda ao histórico de vendas
+  const vendaDiv = document.createElement('div');
+  vendaDiv.className = 'historico';
 
-// Função para atualizar o histórico de transações na página
-function atualizarHistorico() {
-    var divHistorico = document.getElementById('historico');
-    divHistorico.innerHTML = ''; // Limpa o histórico atual
+  const titulo = document.createElement('h2');
+  titulo.textContent = 'Venda para ' + venda.cliente;
+  vendaDiv.appendChild(titulo);
 
-    for (let transacao of transacoes) {
-        var div = document.createElement('div');
-        div.textContent = JSON.stringify(transacao);
-        divHistorico.appendChild(div);
-    }
-}
+  const tipoP = document.createElement('p');
+  tipoP.textContent = 'Tipo: ' + venda.tipo;
+  vendaDiv.appendChild(tipoP);
 
-// Aqui você pode adicionar o código para ouvir os eventos de pagamento e venda
-// e chamar a função adicionarTransacao para cada um
+  // Adicione mais campos conforme necessário...
+
+  historicoVendas.prepend(vendaDiv);  // Adiciona a venda no topo do histórico
+});
+

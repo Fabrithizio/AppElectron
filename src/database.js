@@ -48,37 +48,9 @@ db.run('CREATE TABLE IF NOT EXISTS Pagamentos (id INTEGER PRIMARY KEY AUTOINCREM
 
 
 
+//sitesma de historico
+db.run('CREATE TABLE IF NOT EXISTS historico (id INTEGER PRIMARY KEY AUTOINCREMENT, tipo TEXT, data TEXT, detalhes TEXT)');
 
-//coisa do sistesma de historico
-function getActivitiesByDate(date, callback) {
-  let sql = `SELECT * FROM vendas
-             INNER JOIN clientes ON vendas.cliente_id = clientes.id
-             INNER JOIN pagamentos ON vendas.id = pagamentos.venda_id
-             WHERE vendas.data = ?`;
-
-  db.all(sql, [date], function(err, rows) {
-    if (err) {
-      console.error(err);
-      return;
-    }
-    callback(rows);
-  });
-}
-
-function getActivitiesByClient(clientName, callback) {
-  let sql = `SELECT * FROM vendas
-             INNER JOIN clientes ON vendas.cliente_id = clientes.id
-             INNER JOIN pagamentos ON vendas.id = pagamentos.venda_id
-             WHERE clientes.nome = ?`;
-
-  db.all(sql, [clientName], function(err, rows) {
-    if (err) {
-      console.error(err);
-      return;
-    }
-    callback(rows);
-  });
-}
 
 
 
