@@ -3,12 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <title>Histórico</title>
+  <link rel="stylesheet" href="index.css">
 </head>
 <body>
   <button id="carregarHistorico">Mostrar Histórico</button>
   <label for="filtroData">Filtrar por Data:</label>
   <input type="date" id="filtroData">
   <button id="filtrarPorData">Filtrar</button>
+  <a href="../../index.html"><img src="../../imgs/voltar.png" alt="home"></a>
+
+  <table id="tabela-historico-pagamentos">
+    <thead>
+      <tr>
+        <th>ID Cliente</th>
+        <th>Data do Pagamento</th>
+        <th>Valor Pago</th>
+        <!-- Adicione mais cabeçalhos de coluna conforme necessário -->
+      </tr>
+    </thead>
+    <tbody>
+      <!-- As linhas da tabela serão inseridas aqui -->
+    </tbody>
+  </table>
+  
+
 
   <table id="tabela-historico">
     <thead>
@@ -32,7 +50,7 @@
     </tbody>
   </table>
 
-  <a href="../../index.html"><img src="../../imgs/voltar.png" alt="home"></a>
+
   <script src="historico.js"></script>
 </body>
 </html>

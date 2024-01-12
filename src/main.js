@@ -22,6 +22,18 @@ ipcMain.on('filtrar-vendas-por-data', (event, dataSelecionada) => {
   });
 });
 
+// historico de pagamentos
+ipcMain.on('carregar-dados-historico-pagamentos', (event) => {
+  db.all('SELECT * FROM Pagamentos', [], (err, rows) => {
+    if (err) {
+      event.sender.send('erro', 'Não foi possível carregar o histórico de pagamentos.');
+    } else {
+      event.sender.send('dados-historico-pagamentos', rows);
+    }
+  });
+});
+
+
 
 
 // confirmação de envio do cadastro de clientes para o banco
@@ -69,17 +81,32 @@ ipcMain.on('autocomplete-client-name', (event, clientName) => {
 });
 
 
-
-//coisa do sistema de pagamento da pagina pesquisar
 ipcMain.on('registrar-pagamento', (event, { id, divida, pagamento }) => {
-  db.serialize(() => {
-      // Atualiza a dívida do cliente na tabela Clientes
-      db.run('UPDATE Clientes SET divida = ? WHERE id = ?', [divida, id]);
+  // Obtém a data e hora local no formato ISO
+  const dataPagamento = new Date().toLocaleString('pt-BR', { timeZone: 'America/Recife' });
 
-      // Registra o pagamento na tabela Pagamentos
-      db.run('INSERT INTO Pagamentos (id_cliente, data_pagamento, valor_pago) VALUES (?, ?, ?)', [id, new Date().toISOString(), pagamento]);
+  db.serialize(() => {
+    // Atualiza a dívida do cliente na tabela Clientes
+    db.run('UPDATE Clientes SET divida = ? WHERE id = ?', [divida, id], function(err) {
+      if (err) {
+        event.sender.send('erro', 'Erro ao atualizar a dívida do cliente: ' + err.message);
+        return;
+      }
+
+      // Registra o pagamento na tabela Pagamentos com a data e hora local
+      db.run('INSERT INTO Pagamentos (id_cliente, data_pagamento, valor_pago) VALUES (?, ?, ?)', [id, dataPagamento, pagamento], function(err) {
+        if (err) {
+          event.sender.send('erro', 'Erro ao registrar o pagamento: ' + err.message);
+          return;
+        }
+
+        // Envia uma confirmação de volta ao processo de renderização
+        event.sender.send('pagamento-registrado', 'Pagamento registrado com sucesso.');
+      });
+    });
   });
 });
+
 
 // lida com o sistema de vendas a fiado
 ipcMain.on('registrar-divida', (event, { cliente, divida }) => {

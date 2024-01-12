@@ -28,6 +28,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
     const horaLocal = agora.toLocaleTimeString('pt-BR');
     return `${dataLocal} ${horaLocal}`;
   }
+
+
 //fomulario de vendas  ↓  ↓  ↓
   const vendaForm = document.querySelector('#vendaForm');
   if (vendaForm) 
