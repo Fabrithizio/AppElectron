@@ -47,15 +47,12 @@ function insertVenda({ cliente, tipo, genero = '', categoria = '', marca = '', m
 db.run('CREATE TABLE IF NOT EXISTS Pagamentos (id INTEGER PRIMARY KEY AUTOINCREMENT, id_cliente INTEGER, data_pagamento TEXT, valor_pago REAL)');
 
 
-
-//sitesma de historico
-db.run('CREATE TABLE IF NOT EXISTS historico (id INTEGER PRIMARY KEY AUTOINCREMENT, tipo TEXT, data TEXT, detalhes TEXT)');
+module.exports = { db, insertCliente, insertVenda};
 
 
 
 
 
-module.exports = { db, insertCliente, insertVenda,};
 
 
 

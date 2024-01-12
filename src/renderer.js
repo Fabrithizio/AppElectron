@@ -20,8 +20,15 @@ document.addEventListener('DOMContentLoaded', (event) => {
     });
   }
 
-  //fomulario de vendas  ↓  ↓  ↓
-
+  
+// data local
+  function getDataHoraLocal() {
+    const agora = new Date();
+    const dataLocal = agora.toLocaleDateString('pt-BR');
+    const horaLocal = agora.toLocaleTimeString('pt-BR');
+    return `${dataLocal} ${horaLocal}`;
+  }
+//fomulario de vendas  ↓  ↓  ↓
   const vendaForm = document.querySelector('#vendaForm');
   if (vendaForm) 
   {
@@ -33,9 +40,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
     const cliente = document.getElementById('cliente').value;
     const tipo = document.getElementById('tipo').value;
     const descricao = document.getElementById('descricao').value;
-    const preco = parseFloat(document.getElementById('preco').value); // Converte o preço para um número
+    const preco = parseFloat(document.getElementById('preco').value); 
     const quantidade = document.getElementById('quantidade').value;
-    const dataVenda = new Date().toISOString(); 
+    const dataVenda = getDataHoraLocal(); 
     const tipos = document.getElementById('tipo').value;
     const metodoPagamento = document.getElementById('pagamento').value;
 
@@ -63,7 +70,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
   }
 
-  
 });
 
 

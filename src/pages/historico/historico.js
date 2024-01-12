@@ -1,40 +1,51 @@
 const { ipcRenderer } = require('electron');
 
-// No processo principal
-function insertVenda({ cliente, tipo, genero = '', categoria = '', marca = '', metodoPagamento, descricao, preco, quantidade, dataVenda }) {
-  db.serialize(() => {
-    // Cria a tabela vendas se não existir
-    db.run('CREATE TABLE IF NOT EXISTS vendas (id INTEGER PRIMARY KEY AUTOINCREMENT,cliente TEXT, tipo TEXT, genero TEXT, categoria TEXT, marca TEXT,metodoPagamento TEXT, descricao TEXT, preco REAL, quantidade INTEGER, dataVenda TEXT)');
+function inserirDadosNaTabela(dadosVendas) {
+  const tabelaHistoricoVendas = document.getElementById('tabela-historico').getElementsByTagName('tbody')[0];
+  tabelaHistoricoVendas.innerHTML = ''; // Limpa a tabela antes de adicionar novos dados
 
-    // Insere os valores no banco de dados
-    db.run('INSERT INTO vendas (cliente, tipo, genero, categoria, marca, metodoPagamento, descricao, preco, quantidade, dataVenda) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [cliente, tipo, genero, categoria, marca, metodoPagamento, descricao, preco, quantidade, dataVenda], (err) => {
-      if (err) {
-        console.error(err);
-      } else {
-        console.log('Venda inserida com sucesso.');
-        // Emite um evento IPC com os detalhes da venda
-        mainWindow.webContents.send('venda-inserida', { cliente, tipo, genero, categoria, marca, metodoPagamento, descricao, preco, quantidade, dataVenda });
-      }
-    });
+  dadosVendas.forEach(venda => {
+    const linha = tabelaHistoricoVendas.insertRow(0);
+    linha.insertCell(0).textContent = venda.id;
+    linha.insertCell(1).textContent = venda.cliente;
+    linha.insertCell(2).textContent = venda.tipo;
+    linha.insertCell(3).textContent = venda.genero;
+    linha.insertCell(4).textContent = venda.categoria;
+    linha.insertCell(5).textContent = venda.marca;
+    linha.insertCell(6).textContent = venda.descricao;
+    linha.insertCell(7).textContent = venda.preco.toFixed(2);
+    linha.insertCell(8).textContent = venda.quantidade;
+    linha.insertCell(9).textContent = venda.dataVenda;
+    linha.insertCell(10).textContent = venda.metodoPagamento;
   });
 }
 
-// No processo de renderização
-ipcRenderer.on('venda-inserida', (event, venda) => {
-  // Adiciona a venda ao histórico de vendas
-  const vendaDiv = document.createElement('div');
-  vendaDiv.className = 'historico';
+document.addEventListener('DOMContentLoaded', (event) => {
+  const botaoCarregar = document.getElementById('carregarHistorico');
+  if (botaoCarregar) {
+    botaoCarregar.addEventListener('click', () => {
+      ipcRenderer.send('carregar-dados-historico-vendas');
+    });
+  }
 
-  const titulo = document.createElement('h2');
-  titulo.textContent = 'Venda para ' + venda.cliente;
-  vendaDiv.appendChild(titulo);
+  ipcRenderer.on('dados-historico-vendas', (event, dadosVendas) => {
+    inserirDadosNaTabela(dadosVendas);
+  });
 
-  const tipoP = document.createElement('p');
-  tipoP.textContent = 'Tipo: ' + venda.tipo;
-  vendaDiv.appendChild(tipoP);
+  const botaoFiltrar = document.getElementById('filtrarPorData');
+  const inputFiltroData = document.getElementById('filtroData');
 
-  // Adicione mais campos conforme necessário...
+  botaoFiltrar.addEventListener('click', () => {
+    const dataSelecionada = inputFiltroData.value;
+    ipcRenderer.send('filtrar-vendas-por-data', dataSelecionada);
+  });
 
-  historicoVendas.prepend(vendaDiv);  // Adiciona a venda no topo do histórico
+  ipcRenderer.on('resultado-filtro-data', (event, dadosVendasFiltradas) => {
+    inserirDadosNaTabela(dadosVendasFiltradas);
+  });
 });
+
+
+
+
 

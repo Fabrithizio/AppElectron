@@ -1,35 +1,36 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
-    <title>Histórico de Vendas</title>
-    <style>
-        .historico {
-            width: 80%;
-            margin: auto;
-            border: 1px solid black;
-            padding: 10px;
-            margin-bottom: 10px;
-        }
-        .historico h2 {
-            text-align: center;
-        }
-        .historico p {
-            margin: 0;
-            padding: 0;
-        }
-        img{
-          width: 60px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Histórico</title>
 </head>
 <body>
-    <h1>Histórico de Vendas</h1>
-    <div id="historico-vendas">
-        <!-- Cada venda será uma div com a classe 'historico' -->
-    </div>
-</body>
-</html>
+  <button id="carregarHistorico">Mostrar Histórico</button>
+  <label for="filtroData">Filtrar por Data:</label>
+  <input type="date" id="filtroData">
+  <button id="filtrarPorData">Filtrar</button>
+
+  <table id="tabela-historico">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Cliente</th>
+        <th>Tipo</th>
+        <th>Gênero</th>
+        <th>Categoria</th>
+        <th>Marca</th>
+        <th>Descrição</th>
+        <th>Preço</th>
+        <th>Quantidade</th>
+        <th>Data da Venda</th>
+        <th>Método de Pagamento</th>
+      </tr>
+    </thead>
+    
+    <tbody>
+      <!-- As linhas da tabela serão inseridas aqui -->
+    </tbody>
+  </table>
 
   <a href="../../index.html"><img src="../../imgs/voltar.png" alt="home"></a>
   <script src="historico.js"></script>
