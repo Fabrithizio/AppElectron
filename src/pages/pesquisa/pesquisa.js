@@ -53,15 +53,18 @@ ipcRenderer.on('autocomplete-results', (event, rows) => {
     }
 });
 
-function criarCallbackPagamento(row,pagamento) {
+// No renderer.js, quando estiver criando o callback de pagamento
+function criarCallbackPagamento(row, pagamento) {
     return function() {
-        var valorPagamento = parseFloat(pagamento.value);
-        var novaDivida = row.divida - valorPagamento;
-
-        // Envia um evento IPC com o novo valor da dívida
-        ipcRenderer.send('registrar-pagamento', { id: row.id, divida: novaDivida, pagamento: valorPagamento });
+      var valorPagamento = parseFloat(pagamento.value);
+      var dividaAnterior = row.divida;
+      var dividaRestante = dividaAnterior - valorPagamento;
+      var nomePagador = row.nome; // Supondo que 'row' tenha uma propriedade 'nome'
+  
+      // Envia um evento IPC com os detalhes do pagamento
+      ipcRenderer.send('registrar-pagamento', { nomePagador, dividaAnterior, valorPagamento, dividaRestante });
     };
-}
+  }
     //ouvinte para mostrar os dados do cliente
 ipcRenderer.on('search-results', (event, rows) => {
     var results = document.getElementById('results-dados');

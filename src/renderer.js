@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
   }
 
   
-// data local
+  // data local
   function getDataHoraLocal() {
     const agora = new Date();
     const dataLocal = agora.toLocaleDateString('pt-BR');
@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
   }
 
 
-//fomulario de vendas  ↓  ↓  ↓
+  //fomulario de vendas  ↓  ↓  ↓
   const vendaForm = document.querySelector('#vendaForm');
   if (vendaForm) 
   {

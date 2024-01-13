@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const{db,insertCliente,insertVenda,} = require('./database.js');
 
 
-
+// responsavel pr pegar dos dados do historico de pagamentos
 ipcMain.on('carregar-dados-historico-vendas', (event) => {
   db.all('SELECT * FROM vendas', [], (err, rows) => {
     if (err) {
@@ -13,14 +13,6 @@ ipcMain.on('carregar-dados-historico-vendas', (event) => {
 });
 
 
-ipcMain.on('filtrar-vendas-por-data', (event, dataSelecionada) => {
-  db.all('SELECT * FROM vendas WHERE dataVenda LIKE ?', [`${dataSelecionada}%`], (err, rows) => {
-    if (err) {
-      throw err;
-    }
-    event.sender.send('resultado-filtro-data', rows);
-  });
-});
 
 // historico de pagamentos
 ipcMain.on('carregar-dados-historico-pagamentos', (event) => {
@@ -33,7 +25,26 @@ ipcMain.on('carregar-dados-historico-pagamentos', (event) => {
   });
 });
 
+//responsavel por filtra o  hstorico de vendas
+ipcMain.on('filtrar-vendas-por-data', (event, dataSelecionada) => {
+  db.all('SELECT * FROM vendas WHERE dataVenda LIKE ?', [`${dataSelecionada}%`], (err, rows) => {
+    if (err) {
+      throw err;
+    }
+    event.sender.send('resultado-filtro-data', rows);
+  });
+});
 
+//responsavel por filtra o  hstorico de pagamentos
+ipcMain.on('filtrar-pagamentos-por-data', (event, dataSelecionada) => {
+  db.all('SELECT * FROM Pagamentos WHERE data_pagamento LIKE ?', [dataSelecionada + '%'], (err, rows) => {
+    if (err) {
+      event.sender.send('erro', 'Não foi possível filtrar os pagamentos pela data selecionada.');
+    } else {
+      event.sender.send('resultado-filtro-data-pagamentos', rows);
+    }
+  });
+});
 
 
 // confirmação de envio do cadastro de clientes para o banco
@@ -80,21 +91,21 @@ ipcMain.on('autocomplete-client-name', (event, clientName) => {
   });
 });
 
-
-ipcMain.on('registrar-pagamento', (event, { id, divida, pagamento }) => {
+ipcMain.on('registrar-pagamento', (event, { nomePagador, dividaAnterior, valorPagamento }) => {
   // Obtém a data e hora local no formato ISO
   const dataPagamento = new Date().toLocaleString('pt-BR', { timeZone: 'America/Recife' });
+  const dividaRestante = dividaAnterior - valorPagamento;
 
   db.serialize(() => {
     // Atualiza a dívida do cliente na tabela Clientes
-    db.run('UPDATE Clientes SET divida = ? WHERE id = ?', [divida, id], function(err) {
+    db.run('UPDATE Clientes SET divida = ? WHERE nome = ?', [dividaRestante, nomePagador], function(err) {
       if (err) {
         event.sender.send('erro', 'Erro ao atualizar a dívida do cliente: ' + err.message);
         return;
       }
 
-      // Registra o pagamento na tabela Pagamentos com a data e hora local
-      db.run('INSERT INTO Pagamentos (id_cliente, data_pagamento, valor_pago) VALUES (?, ?, ?)', [id, dataPagamento, pagamento], function(err) {
+      // Registra o pagamento na tabela Pagamentos com as novas colunas
+      db.run('INSERT INTO Pagamentos (nome_pagador, divida_anterior, valor_pago, divida_restante, data_pagamento) VALUES (?, ?, ?, ?, ?)', [nomePagador, dividaAnterior, valorPagamento, dividaRestante, dataPagamento], function(err) {
         if (err) {
           event.sender.send('erro', 'Erro ao registrar o pagamento: ' + err.message);
           return;
@@ -106,6 +117,7 @@ ipcMain.on('registrar-pagamento', (event, { id, divida, pagamento }) => {
     });
   });
 });
+
 
 
 // lida com o sistema de vendas a fiado

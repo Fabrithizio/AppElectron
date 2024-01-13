@@ -43,8 +43,17 @@ function insertVenda({ cliente, tipo, genero = '', categoria = '', marca = '', m
 }
 
 
-//função para lidar com o sistema de pagamentos de clientes
-db.run('CREATE TABLE IF NOT EXISTS Pagamentos (id INTEGER PRIMARY KEY AUTOINCREMENT, id_cliente INTEGER, data_pagamento TEXT, valor_pago REAL)');
+
+
+db.run(`CREATE TABLE IF NOT EXISTS Pagamentos (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  nome_pagador TEXT,
+  divida_anterior REAL,
+  valor_pago REAL,
+  divida_restante REAL,
+  data_pagamento TEXT
+)`);
+
 
 
 module.exports = { db, insertCliente, insertVenda};

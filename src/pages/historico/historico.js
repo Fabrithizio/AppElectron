@@ -44,30 +44,53 @@ document.addEventListener('DOMContentLoaded', (event) => {
     inserirDadosNaTabela(dadosVendasFiltradas);
   });
 
-// historico de pagamentso ↓↓↓
+
+  
+  // historico de pagamentos ↓↓↓
+  const botaoCarregarPagamentos = document.getElementById('carregarHistoricoPagamentos');
+  if (botaoCarregarPagamentos) {
+    botaoCarregarPagamentos.addEventListener('click', () => {
+      ipcRenderer.send('carregar-dados-historico-pagamentos');
+    });
+  }
 
   function inserirDadosNaTabelaPagamentos(dadosPagamentos) {
     const tabelaHistoricoPagamentos = document.getElementById('tabela-historico-pagamentos').getElementsByTagName('tbody')[0];
-    // Limpa a tabela antes de adicionar novos dados
-    tabelaHistoricoPagamentos.innerHTML = '';
+    tabelaHistoricoPagamentos.innerHTML = ''; // Limpa a tabela antes de adicionar novos dados
   
     dadosPagamentos.forEach(pagamento => {
-      const linha = tabelaHistoricoPagamentos.insertRow();
-      linha.insertCell(0).textContent = pagamento.id_cliente;
-      linha.insertCell(1).textContent = pagamento.data_pagamento;
+      const linha = tabelaHistoricoPagamentos.insertRow(0);
+      linha.insertCell(0).textContent = pagamento.nome_pagador;
+      linha.insertCell(1).textContent = pagamento.divida_anterior.toFixed(2);
       linha.insertCell(2).textContent = pagamento.valor_pago.toFixed(2);
-      // Adicione mais células conforme necessário
+      linha.insertCell(3).textContent = pagamento.divida_restante.toFixed(2);
+      linha.insertCell(4).textContent = pagamento.data_pagamento;
     });
   }
-  
+  // envia uma chamada para o main 
   ipcRenderer.on('dados-historico-pagamentos', (event, dadosPagamentos) => {
     inserirDadosNaTabelaPagamentos(dadosPagamentos);
   });
-  
-  // Adicione um botão ou mecanismo para chamar 'carregar-dados-historico-pagamentos'
-  
+
+  //lida com o sistema de filtro para pagamentos
+
+  const botaoFiltrarPagamentos = document.getElementById('filtrarPorDataPagamentos');
+  const inputFiltroDataPagamentos = document.getElementById('filtroDataPagamentos');
+
+  botaoFiltrarPagamentos.addEventListener('click', () => {
+    const dataSelecionada = inputFiltroDataPagamentos.value;
+    ipcRenderer.send('filtrar-pagamentos-por-data', dataSelecionada);
+  });
+
+  ipcRenderer.on('resultado-filtro-data-pagamentos', (event, dadosPagamentosFiltrados) => {
+    inserirDadosNaTabelaPagamentos(dadosPagamentosFiltrados);
+  });
 
 });
+
+
+//style da pagina
+
 
 
 
