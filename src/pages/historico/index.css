@@ -2,6 +2,91 @@
   margin: 0;
   padding: 0;
 }
-img{
-  width: 90px;
+body{
+  background-color: rgb(211, 211, 211);
+}
+.container-historico{
+  border: solid 2px;
+  
+}
+
+#home-hitorico{
+  width: 45px;
+}
+.filtro{
+  width: 23px;
+}
+
+.top-bar{
+  display: flex;
+  justify-content: flex-start; /* Alinha os itens à esquerda */
+}
+
+.mid-bar{
+  display: flex;
+  margin-left: 10px;
+  justify-content: space-around;
+
+}
+.data-filtro{
+  display: flex;
+  margin-left: 3px;
+}
+.botao-historico{
+  padding: 2px;
+  font-size: 12pt;
+  background-color: rgb(91, 231, 154);
+  color: #000000;
+  width: 110px;
+  cursor: pointer;
+}
+
+.bot-bar{
+  text-align: center;
+}
+h2{
+  margin-left: auto; /* Empurra o elemento para o centro */
+  margin-right: auto; /* Mantém o elemento centralizado */
+}
+
+#tabela-historico {
+  font-size: 12pt;
+}
+
+#tabela-historico-pagamentos {
+  font-size: 16pt;
+}
+
+
+#tabela-historico th,
+#tabela-historico td,
+#tabela-historico-pagamentos th,
+#tabela-historico-pagamentos td {
+  padding-left: 1.5;
+  padding-right: 1.5; /* Ajusta o preenchimento dentro das células */
+  max-height: 100px; /* Define uma altura máxima para as células */
+  overflow: auto; /* Permite a rolagem dentro da célula se o conteúdo exceder a altura máxima */
+}
+
+#tabela-historico,
+#tabela-historico-pagamentos {
+  border-collapse: separate; /* Separa as bordas das células */
+  border-spacing: 3px; /* Aumenta o espaço entre as células */
+}
+
+
+
+
+
+
+#tabela-historico tr:nth-child(odd),
+#tabela-historico-pagamentos tr:nth-child(odd) {
+  background-color: #f2f2f2;
+  
+}
+
+#tabela-historico tr:nth-child(even),
+#tabela-historico-pagamentos tr:nth-child(even) {
+  background-color: #ffffff; 
+  
 }

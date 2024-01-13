@@ -7,61 +7,77 @@
 </head>
 <body>
 
-    <a href="../../index.html"><img src="../../imgs/voltar.png" alt="home"></a>
+  <div class="container-historico">
+    <div class="top-bar">
+      <a href="../../index.html"><img src="../../imgs/voltar.png" alt="home" id="home-hitorico"></a> <h2>Histórico</h2>
+    </div>
+   
+    <div class="mid-bar">
 
-  <button id="carregarHistorico">Mostrar Histórico</button>
-  <button id="carregarHistoricoPagamentos">Mostrar Histórico de Pagamentos</button>
+      <div class="data-filtro">
+        <button id="carregarHistorico" class="botao-historico">Vendas</button>
+        <img src="../../imgs/filtro.png" alt="filtro" class="filtro">
+        <input type="date" id="filtroData">
+        <button id="filtrarPorData">Filtrar</button>
+      </div>
 
-
-  <label for="filtroData">Filtrar Vendas:</label>
-  <input type="date" id="filtroData">
-  <button id="filtrarPorData">Filtrar</button>
-
-  <label for="filtroDataPagamentos">Filtrar Pagamentos:</label>
-<input type="date" id="filtroDataPagamentos">
-<button id="filtrarPorDataPagamentos">Filtrar</button>
-
-
-  <table id="tabela-historico-pagamentos">
-    <thead>
-      <tr>
-        <th>Nome do Pagador</th>
-        <th>Dívida Anterior</th>
-        <th>Valor Pago</th>
-        <th>Dívida Restante</th>
-        <th>Data do Pagamento</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- As linhas da tabela serão inseridas aqui -->
-    </tbody>
-  </table>
+      <div class="data-filtro">
+        <button id="carregarHistoricoPagamentos" class="botao-historico">Pagamentos</button>
+        <img src="../../imgs/filtro.png" alt="filtro" class="filtro">
+        <input type="date" id="filtroDataPagamentos">
+        <button id="filtrarPorDataPagamentos">Filtrar</button>
+      </div>
+    </div>
+   
+    
+    <div class="bot-bar">
+      <table id="tabela-historico">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Cliente</th>
+          <th>Tipo</th>
+          <th>Gênero</th>
+          <th>Categoria</th>
+          <th>Marca</th>
+          <th>Descrição</th>
+          <th>Preço</th>
+          <th>Quantidade</th>
+          <th>Data da Venda</th>
+          <th>Método de Pagamento</th>
+        </tr>
+      </thead>
+      
+      <tbody>
+        <!-- As linhas da tabela serão inseridas aqui -->
+      </tbody>
+    </table>
+  
   
 
 
-  <table id="tabela-historico">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Cliente</th>
-        <th>Tipo</th>
-        <th>Gênero</th>
-        <th>Categoria</th>
-        <th>Marca</th>
-        <th>Descrição</th>
-        <th>Preço</th>
-        <th>Quantidade</th>
-        <th>Data da Venda</th>
-        <th>Método de Pagamento</th>
-      </tr>
-    </thead>
+  
+    <table id="tabela-historico-pagamentos" >
+      <thead>
+        <tr>
+          <th>Nome do Pagador</th>
+          <th>Dívida Anterior</th>
+          <th>Valor Pago</th>
+          <th>Dívida Restante</th>
+          <th>Data / Hora</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- As linhas da tabela serão inseridas aqui -->
+      </tbody>
+    </table>
+    </div>
+  
     
-    <tbody>
-      <!-- As linhas da tabela serão inseridas aqui -->
-    </tbody>
-  </table>
-
-
+    
+  </div>
+  
+   
   <script src="historico.js"></script>
 
 </body>

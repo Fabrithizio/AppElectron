@@ -88,8 +88,56 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
 });
 
+document.addEventListener('DOMContentLoaded', (event) => {
+  // Esconde os elementos específicos inicialmente
+  const tabelaHistorico = document.getElementById('tabela-historico');
+  const filtroData = document.getElementById('filtroData');
+  const filtrarPorData = document.getElementById('filtrarPorData');
+  const filtroImgHistorico = document.querySelector('.mid-bar > div:first-child .filtro');
+  
+  const tabelaHistoricoPagamentos = document.getElementById('tabela-historico-pagamentos');
+  const filtroDataPagamentos = document.getElementById('filtroDataPagamentos');
+  const filtrarPorDataPagamentos = document.getElementById('filtrarPorDataPagamentos');
+  const filtroImgPagamentos = document.querySelector('.mid-bar > div:last-child .filtro');
 
-//style da pagina
+  // Inicialmente, esconde todos os elementos de ambas as tabelas
+  tabelaHistorico.style.display = 'none';
+  filtroData.style.display = 'none';
+  filtrarPorData.style.display = 'none';
+  filtroImgHistorico.style.display = 'none';
+  
+  tabelaHistoricoPagamentos.style.display = 'none';
+  filtroDataPagamentos.style.display = 'none';
+  filtrarPorDataPagamentos.style.display = 'none';
+  filtroImgPagamentos.style.display = 'none';
+
+  // Função para mostrar o histórico de vendas e ocultar o histórico de pagamentos
+  document.getElementById('carregarHistorico').addEventListener('click', () => {
+    tabelaHistorico.style.display = 'block';
+    filtroData.style.display = 'block';
+    filtrarPorData.style.display = 'block';
+    filtroImgHistorico.style.display = 'block';
+    
+    tabelaHistoricoPagamentos.style.display = 'none';
+    filtroDataPagamentos.style.display = 'none';
+    filtrarPorDataPagamentos.style.display = 'none';
+    filtroImgPagamentos.style.display = 'none';
+  });
+
+  // Função para mostrar o histórico de pagamentos e ocultar o histórico de vendas
+  document.getElementById('carregarHistoricoPagamentos').addEventListener('click', () => {
+    tabelaHistorico.style.display = 'none';
+    filtroData.style.display = 'none';
+    filtrarPorData.style.display = 'none';
+    filtroImgHistorico.style.display = 'none';
+    
+    tabelaHistoricoPagamentos.style.display = 'block';
+    filtroDataPagamentos.style.display = 'block';
+    filtrarPorDataPagamentos.style.display = 'block';
+    filtroImgPagamentos.style.display = 'block';
+  });
+});
+
 
 
 
