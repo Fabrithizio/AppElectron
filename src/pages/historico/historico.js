@@ -2,7 +2,7 @@ const { ipcRenderer } = require('electron');
 
 function inserirDadosNaTabela(dadosVendas) {
   const tabelaHistoricoVendas = document.getElementById('tabela-historico').getElementsByTagName('tbody')[0];
-  tabelaHistoricoVendas.innerHTML = ''; // Limpa a tabela antes de adicionar novos dados
+  tabelaHistoricoVendas.innerHTML = ''; 
 
   dadosVendas.forEach(venda => {
     const linha = tabelaHistoricoVendas.insertRow(0);
@@ -61,9 +61,19 @@ document.addEventListener('DOMContentLoaded', (event) => {
     dadosPagamentos.forEach(pagamento => {
       const linha = tabelaHistoricoPagamentos.insertRow(0);
       linha.insertCell(0).textContent = pagamento.nome_pagador;
-      linha.insertCell(1).textContent = pagamento.divida_anterior.toFixed(2);
-      linha.insertCell(2).textContent = pagamento.valor_pago.toFixed(2);
-      linha.insertCell(3).textContent = pagamento.divida_restante.toFixed(2);
+      
+      const celulaDividaAnterior = linha.insertCell(1);
+      celulaDividaAnterior.textContent = pagamento.divida_anterior.toFixed(2);
+      celulaDividaAnterior.classList.add('divida-anterior');
+  
+      const celulaValorPago = linha.insertCell(2);
+      celulaValorPago.textContent = pagamento.valor_pago.toFixed(2);
+      celulaValorPago.classList.add('valor-pago');
+  
+      const celulaDividaRestante = linha.insertCell(3);
+      celulaDividaRestante.textContent = pagamento.divida_restante.toFixed(2);
+      celulaDividaRestante.classList.add('divida-restante');
+  
       linha.insertCell(4).textContent = pagamento.data_pagamento;
     });
   }
@@ -74,13 +84,13 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
   //lida com o sistema de filtro para pagamentos
 
-  const botaoFiltrarPagamentos = document.getElementById('filtrarPorDataPagamentos');
-  const inputFiltroDataPagamentos = document.getElementById('filtroDataPagamentos');
+// No arquivo historico.js
+const botaoFiltrarPagamentos = document.getElementById('filtrarPorDataPagamentos');
+botaoFiltrarPagamentos.addEventListener('click', () => {
+  const dataSelecionada = new Date(document.getElementById('filtroDataPagamentos').value).toLocaleDateString('pt-BR');
+  ipcRenderer.send('filtrar-pagamentos-por-data', dataSelecionada);
+});
 
-  botaoFiltrarPagamentos.addEventListener('click', () => {
-    const dataSelecionada = inputFiltroDataPagamentos.value;
-    ipcRenderer.send('filtrar-pagamentos-por-data', dataSelecionada);
-  });
 
   ipcRenderer.on('resultado-filtro-data-pagamentos', (event, dadosPagamentosFiltrados) => {
     inserirDadosNaTabelaPagamentos(dadosPagamentosFiltrados);

@@ -6,12 +6,16 @@ body{
   background-color: rgb(211, 211, 211);
 }
 .container-historico{
-  border: solid 2px;
+  border: solid 1px;
   
 }
 
 #home-hitorico{
   width: 45px;
+  
+}
+#home-hitorico:hover{
+  margin-left: 3px;
 }
 .filtro{
   width: 23px;
@@ -20,6 +24,8 @@ body{
 .top-bar{
   display: flex;
   justify-content: flex-start; /* Alinha os itens à esquerda */
+  margin-top: 7px;
+  margin-left: 5px;
 }
 
 .mid-bar{
@@ -57,6 +63,9 @@ h2{
   font-size: 16pt;
 }
 
+th{
+  padding: 6px;
+}
 
 #tabela-historico th,
 #tabela-historico td,
@@ -75,10 +84,6 @@ h2{
 }
 
 
-
-
-
-
 #tabela-historico tr:nth-child(odd),
 #tabela-historico-pagamentos tr:nth-child(odd) {
   background-color: #f2f2f2;
@@ -89,4 +94,15 @@ h2{
 #tabela-historico-pagamentos tr:nth-child(even) {
   background-color: #ffffff; 
   
+}
+.divida-anterior {
+  color: red; /* Cor vermelha para dívida anterior */
+}
+
+.valor-pago {
+  color: rgb(30, 179, 0); /* Cor verde para valor pago */
+}
+
+.divida-restante {
+  color: #E7B118; /* Cor amarela para dívida restante */
 }

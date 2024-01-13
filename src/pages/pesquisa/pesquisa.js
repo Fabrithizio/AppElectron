@@ -53,18 +53,23 @@ ipcRenderer.on('autocomplete-results', (event, rows) => {
     }
 });
 
-// No renderer.js, quando estiver criando o callback de pagamento
+
 function criarCallbackPagamento(row, pagamento) {
     return function() {
       var valorPagamento = parseFloat(pagamento.value);
+      if (isNaN(valorPagamento) || valorPagamento <= 0) {
+        alert('Por favor, insira um valor de pagamento válido.');
+        return;
+      }
       var dividaAnterior = row.divida;
       var dividaRestante = dividaAnterior - valorPagamento;
-      var nomePagador = row.nome; // Supondo que 'row' tenha uma propriedade 'nome'
+      var nomePagador = row.nome;
   
       // Envia um evento IPC com os detalhes do pagamento
       ipcRenderer.send('registrar-pagamento', { nomePagador, dividaAnterior, valorPagamento, dividaRestante });
     };
   }
+  
     //ouvinte para mostrar os dados do cliente
 ipcRenderer.on('search-results', (event, rows) => {
     var results = document.getElementById('results-dados');

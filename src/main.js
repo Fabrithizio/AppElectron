@@ -1,6 +1,13 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const{db,insertCliente,insertVenda,} = require('./database.js');
 
+// Função para formatar a data no formato "DD/MM/YYYY"
+function formatarData(data) {
+  const dia = data.getDate().toString().padStart(2, '0');
+  const mes = (data.getMonth() + 1).toString().padStart(2, '0');
+  const ano = data.getFullYear().toString();
+  return `${dia}/${mes}/${ano}`;
+}
 
 // responsavel pr pegar dos dados do historico de pagamentos
 ipcMain.on('carregar-dados-historico-vendas', (event) => {
@@ -35,14 +42,46 @@ ipcMain.on('filtrar-vendas-por-data', (event, dataSelecionada) => {
   });
 });
 
-//responsavel por filtra o  hstorico de pagamentos
+// Use a função formatarData ao filtrar pagamentos por data
 ipcMain.on('filtrar-pagamentos-por-data', (event, dataSelecionada) => {
-  db.all('SELECT * FROM Pagamentos WHERE data_pagamento LIKE ?', [dataSelecionada + '%'], (err, rows) => {
-    if (err) {
-      event.sender.send('erro', 'Não foi possível filtrar os pagamentos pela data selecionada.');
-    } else {
-      event.sender.send('resultado-filtro-data-pagamentos', rows);
-    }
+  const dataFormatada = formatarData(new Date(dataSelecionada)); // Formata a data para "DD/MM/YYYY"
+  db.all('SELECT * FROM Pagamentos WHERE data_pagamento = ?', [dataFormatada], (err, rows) => {
+    // Restante do código para enviar os resultados filtrados...
+  });
+});
+
+// lida com o sistema de vendas a fiado
+ipcMain.on('registrar-divida', (event, { cliente, divida }) => {
+  db.serialize(() => {
+      // Adiciona o valor da dívida à dívida atual do cliente na tabela Clientes
+      db.run('UPDATE Clientes SET divida = divida + ? WHERE nome = ?', [divida, cliente]);
+  });
+});
+
+ipcMain.on('registrar-pagamento', (event, { nomePagador, dividaAnterior, valorPagamento }) => {
+  const agora = new Date();
+  const dataPagamento = formatarData(agora); // Formata a data para "DD/MM/YYYY"
+  const dividaRestante = dividaAnterior - valorPagamento;
+
+  db.serialize(() => {
+    // Atualiza a dívida do cliente na tabela Clientes
+    db.run('UPDATE Clientes SET divida = ? WHERE nome = ?', [dividaRestante, nomePagador], function(err) {
+      if (err) {
+        event.sender.send('erro', 'Erro ao atualizar a dívida do cliente: ' + err.message);
+        return;
+      }
+
+      // Registra o pagamento na tabela Pagamentos com as novas colunas
+      db.run('INSERT INTO Pagamentos (nome_pagador, divida_anterior, valor_pago, divida_restante, data_pagamento) VALUES (?, ?, ?, ?, ?)', [nomePagador, dividaAnterior, valorPagamento, dividaRestante, dataPagamento], function(err) {
+        if (err) {
+          event.sender.send('erro', 'Erro ao registrar o pagamento: ' + err.message);
+          return;
+        }
+
+        // Envia uma confirmação de volta ao processo de renderização
+        event.sender.send('pagamento-registrado', 'Pagamento registrado com sucesso.');
+      });
+    });
   });
 });
 
@@ -91,42 +130,9 @@ ipcMain.on('autocomplete-client-name', (event, clientName) => {
   });
 });
 
-ipcMain.on('registrar-pagamento', (event, { nomePagador, dividaAnterior, valorPagamento }) => {
-  // Obtém a data e hora local no formato ISO
-  const dataPagamento = new Date().toLocaleString('pt-BR', { timeZone: 'America/Recife' });
-  const dividaRestante = dividaAnterior - valorPagamento;
-
-  db.serialize(() => {
-    // Atualiza a dívida do cliente na tabela Clientes
-    db.run('UPDATE Clientes SET divida = ? WHERE nome = ?', [dividaRestante, nomePagador], function(err) {
-      if (err) {
-        event.sender.send('erro', 'Erro ao atualizar a dívida do cliente: ' + err.message);
-        return;
-      }
-
-      // Registra o pagamento na tabela Pagamentos com as novas colunas
-      db.run('INSERT INTO Pagamentos (nome_pagador, divida_anterior, valor_pago, divida_restante, data_pagamento) VALUES (?, ?, ?, ?, ?)', [nomePagador, dividaAnterior, valorPagamento, dividaRestante, dataPagamento], function(err) {
-        if (err) {
-          event.sender.send('erro', 'Erro ao registrar o pagamento: ' + err.message);
-          return;
-        }
-
-        // Envia uma confirmação de volta ao processo de renderização
-        event.sender.send('pagamento-registrado', 'Pagamento registrado com sucesso.');
-      });
-    });
-  });
-});
 
 
 
-// lida com o sistema de vendas a fiado
-ipcMain.on('registrar-divida', (event, { cliente, divida }) => {
-  db.serialize(() => {
-      // Adiciona o valor da dívida à dívida atual do cliente na tabela Clientes
-      db.run('UPDATE Clientes SET divida = divida + ? WHERE nome = ?', [divida, cliente]);
-  });
-});
 
 
 //responsavel pelos sistema de historio 
@@ -146,8 +152,8 @@ ipcMain.on('get-activities-by-client', (event, clientName) => {
 //controle do sistema electron
 function createWindow() {
   const win = new BrowserWindow({
-    width: 900,
-    height: 650,
+    width: 950,
+    height: 700,
     webPreferences: {
       nodeIntegration: true, // Habilita o 'require' no processo de renderização
       contextIsolation: false // Desabilita o isolamento de contexto
