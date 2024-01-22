@@ -12,19 +12,56 @@
     
   <div>
     <h1>Casdastra Cliente</h1>
-   <form method="post" class="clientes">
-  <input type="text" name="nome" id="nome" placeholder="Nome" onclick="search()">
-  <input type="text" name="cpf" id="cpf"  placeholder="CPF">
-  <input type="text" name="rg" id="rg"  placeholder="RG">
+ <form method="post" class="clientes">
+  <input type="text" name="nome" id="nome" placeholder="Nome" onclick="search()" required>
+  <input type="text" name="cpf" id="cpf"  placeholder="CPF" maxlength="14">
+  <input type="text" name="rg" id="rg"  placeholder="RG" maxlength="12">
   <input type="text" name="endereco" id="endereco" placeholder="Endereço">
-  <input type="text" name="telefone" id="telefone"  placeholder="Telefone">
+  <input type="text" name="telefone" id="telefone"  placeholder="Telefone" required maxlength="15">
   <input type="email" name="email" id="email"  placeholder="E-mail">
   <input type="number" name="divida" id="divida" placeholder="Dívida Atual">
   <button type="submit" >Cadastra Cliente</button>
   <a href="../../index.html"><img src="../../imgs/voltar.png" alt="voltar"></a>
 </form>
+
+
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <span class="close-button">×</span>
+    <p id="modal-text"></p>
+  </div>
+</div>
+
   </main>
 
   <script src="../../renderer.js"></script>
+<script>
+  window.onload = function() {
+    document.getElementById('telefone').addEventListener('input', function (e) {
+      e.target.value = e.target.value
+        .replace(/\D/g, '')
+        .replace(/^(\d{2})(\d)/g, '($1) $2')
+        .replace(/(\d)(\d{4})$/, '$1-$2');
+    });
+  
+    document.getElementById('cpf').addEventListener('input', function (e) {
+      e.target.value = e.target.value
+        .replace(/\D/g, '')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d{2})$/, '$1-$2');
+    });
+  
+    document.getElementById('rg').addEventListener('input', function (e) {
+      e.target.value = e.target.value
+        .replace(/\D/g, '')
+        .replace(/^(\d{2})(\d)/g, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1-$2');
+    });
+  }
+  </script>
+  
+  
 </body>
 </html>

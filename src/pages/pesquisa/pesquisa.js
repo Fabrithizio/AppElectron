@@ -58,7 +58,7 @@ function criarCallbackPagamento(row, pagamento) {
     return function() {
       var valorPagamento = parseFloat(pagamento.value);
       if (isNaN(valorPagamento) || valorPagamento <= 0) {
-        alert('Por favor, insira um valor de pagamento válido.');
+        showModal('Por favor, insira um valor de pagamento válido.');
         return;
       }
       var dividaAnterior = row.divida;
@@ -67,8 +67,28 @@ function criarCallbackPagamento(row, pagamento) {
   
       // Envia um evento IPC com os detalhes do pagamento
       ipcRenderer.send('registrar-pagamento', { nomePagador, dividaAnterior, valorPagamento, dividaRestante });
+
+      // Exibe uma mensagem de sucesso
+      showModal('Pagamento Efetuado');
     };
+}
+
+// Função para exibir a janela modal
+function showModal(message) {
+  const modal = document.getElementById('modal');
+  const span = document.getElementsByClassName('close-button')[0];
+  document.getElementById('modal-text').textContent = message;
+  modal.style.display = 'block';
+  span.onclick = function() {
+    modal.style.display = 'none';
   }
+  window.onclick = function(event) {
+    if (event.target == modal) {
+      modal.style.display = 'none';
+    }
+  }
+}
+
   
     //ouvinte para mostrar os dados do cliente
 ipcRenderer.on('search-results', (event, rows) => {

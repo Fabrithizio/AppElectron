@@ -1,24 +1,56 @@
 const { ipcRenderer } = require('electron');
 
-document.addEventListener('DOMContentLoaded', (event) => {
-  const form = document.querySelector('.clientes');
-  if (form) {
-    form.addEventListener('submit', (event) => {
-      event.preventDefault();
+  document.addEventListener('DOMContentLoaded', (event) => {
+    const form = document.querySelector('.clientes');
+    if (form) {
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
 
-      // Obtém os valores do formulário de clientes
-      const nome = document.getElementById('nome').value;
-      const cpf = document.getElementById('cpf').value;
-      const rg = document.getElementById('rg').value;
-      const endereco = document.getElementById('endereco').value;
-      const telefone = document.getElementById('telefone').value;
-      const email = document.getElementById('email').value;
-      const divida = document.getElementById('divida').value;
+        // Obtém os valores do formulário de clientes
+        const nome = document.getElementById('nome').value;
+        const cpf = document.getElementById('cpf').value;
+        const rg = document.getElementById('rg').value;
+        const endereco = document.getElementById('endereco').value;
+        const telefone = document.getElementById('telefone').value;
+        const email = document.getElementById('email').value;
+        const divida = document.getElementById('divida').value;
 
-      // Envia um evento IPC com os valores do formulário de clientes
-      ipcRenderer.send('submit-cliente', { nome, cpf, rg, endereco, telefone, email, divida });
-    });
-  }
+        // Verifica se todos os campos obrigatórios estão preenchidos
+        if (!nome || !telefone) {
+          showModal('Por favor, preencha todos os campos obrigatórios.');
+          return; // Impede o envio do formulário
+        }
+
+        // Envia um evento IPC com os valores do formulário de clientes
+        ipcRenderer.send('submit-cliente', { nome, cpf, rg, endereco, telefone, email, divida });
+
+        // Exibe uma mensagem de sucesso
+        showModal('Cliente Cadastrado');
+
+          // Limpa o formulário
+          form.reset();
+      });
+    }
+ 
+
+    // Função para exibir a janela modal
+    function showModal(message) {
+      const modal = document.getElementById('modal');
+      const span = document.getElementsByClassName('close-button')[0];
+      document.getElementById('modal-text').textContent = message;
+      modal.style.display = 'block';
+      span.onclick = function() {
+        modal.style.display = 'none';
+      }
+      window.onclick = function(event) {
+        if (event.target == modal) {
+          modal.style.display = 'none';
+        }
+      }
+    }
+
+
+  
 
   
   // data local
@@ -85,26 +117,26 @@ if (vendaForm)
   // Envia um evento IPC com os valores do formulário
   ipcRenderer.send('submit-venda', dados);
 
-  // Exibe uma mensagem de sucesso
-  showModal('Venda Realizada');
-});
+    // Exibe uma mensagem de sucesso
+    showModal('Venda Realizada');
+  });
 
-// Função para exibir a janela modal
-function showModal(message) {
-  const modal = document.getElementById('modal');
-  const span = document.getElementsByClassName('close-button')[0];
-  document.getElementById('modal-text').textContent = message;
-  modal.style.display = 'block';
-  span.onclick = function() {
-    modal.style.display = 'none';
-  }
-  window.onclick = function(event) {
-    if (event.target == modal) {
+  // Função para exibir a janela modal
+  function showModal(message) {
+    const modal = document.getElementById('modal');
+    const span = document.getElementsByClassName('close-button')[0];
+    document.getElementById('modal-text').textContent = message;
+    modal.style.display = 'block';
+    span.onclick = function() {
       modal.style.display = 'none';
     }
+    window.onclick = function(event) {
+      if (event.target == modal) {
+        modal.style.display = 'none';
+      }
+    }
   }
-}
-}
+  }
 
   
   
