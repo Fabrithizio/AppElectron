@@ -56,10 +56,8 @@ const { ipcRenderer } = require('electron');
   // data local
   function getDataHoraLocal() {
     const agora = new Date();
-    const dataLocal = agora.toLocaleDateString('pt-BR');
-    const horaLocal = agora.toLocaleTimeString('pt-BR');
-    return `${dataLocal} ${horaLocal}`;
-  }
+    return agora.toISOString();
+}
 
 // form vendas ↓↓↓
 const vendaForm = document.querySelector('#vendaForm');

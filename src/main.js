@@ -43,12 +43,16 @@ ipcMain.on('filtrar-vendas-por-data', (event, dataSelecionada) => {
 });
 
 // Use a função formatarData ao filtrar pagamentos por data
-ipcMain.on('filtrar-pagamentos-por-data', (event, dataSelecionada) => {
-  const dataFormatada = formatarData(new Date(dataSelecionada)); // Formata a data para "DD/MM/YYYY"
-  db.all('SELECT * FROM Pagamentos WHERE data_pagamento = ?', [dataFormatada], (err, rows) => {
-    // Restante do código para enviar os resultados filtrados...
+ipcMain.on('filtrar-vendas-por-data', (event, dataSelecionada) => {
+  const dataISO = new Date(dataSelecionada).toISOString().split('T')[0];
+  db.all('SELECT * FROM vendas WHERE DATE(dataVenda) = ?', [dataISO], (err, rows) => {
+    if (err) {
+      throw err;
+    }
+    event.sender.send('resultado-filtro-data', rows);
   });
 });
+
 
 // lida com o sistema de vendas a fiado
 ipcMain.on('registrar-divida', (event, { cliente, divida }) => {

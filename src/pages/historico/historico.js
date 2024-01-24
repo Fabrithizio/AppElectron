@@ -15,9 +15,15 @@ function inserirDadosNaTabela(dadosVendas) {
     linha.insertCell(6).textContent = venda.descricao;
     linha.insertCell(7).textContent = venda.preco.toFixed(2);
     linha.insertCell(8).textContent = venda.quantidade;
-    linha.insertCell(9).textContent = venda.dataVenda;
+
+    // Converte a data do formato ISO para o formato local
+    const dataVenda = new Date(venda.dataVenda);
+    const dataVendaLocal = dataVenda.toLocaleDateString('pt-BR');
+    linha.insertCell(9).textContent = dataVendaLocal;
+
     linha.insertCell(10).textContent = venda.metodoPagamento;
-  });
+});
+
 }
 
 document.addEventListener('DOMContentLoaded', (event) => {
