@@ -70,6 +70,10 @@ function criarCallbackPagamento(row, pagamento) {
 
       // Exibe uma mensagem de sucesso
       showModal('Pagamento Efetuado');
+
+      // Limpa o campo de entrada
+      pagamento.value = '';
+
     };
 }
 
