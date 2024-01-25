@@ -71,17 +71,21 @@ document.addEventListener('DOMContentLoaded', (event) => {
       const celulaDividaAnterior = linha.insertCell(1);
       celulaDividaAnterior.textContent = pagamento.divida_anterior.toFixed(2);
       celulaDividaAnterior.classList.add('divida-anterior');
-  
+    
       const celulaValorPago = linha.insertCell(2);
       celulaValorPago.textContent = pagamento.valor_pago.toFixed(2);
       celulaValorPago.classList.add('valor-pago');
-  
+    
       const celulaDividaRestante = linha.insertCell(3);
       celulaDividaRestante.textContent = pagamento.divida_restante.toFixed(2);
       celulaDividaRestante.classList.add('divida-restante');
-  
-      linha.insertCell(4).textContent = pagamento.data_pagamento;
+    
+      // Converte a data do formato ISO para o formato local
+      const dataPagamento = new Date(pagamento.data_pagamento);
+      const dataPagamentoLocal = dataPagamento.toLocaleDateString('pt-BR');
+      linha.insertCell(4).textContent = dataPagamentoLocal;
     });
+    
   }
   // envia uma chamada para o main 
   ipcRenderer.on('dados-historico-pagamentos', (event, dadosPagamentos) => {
@@ -93,8 +97,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
 // No arquivo historico.js
 const botaoFiltrarPagamentos = document.getElementById('filtrarPorDataPagamentos');
 botaoFiltrarPagamentos.addEventListener('click', () => {
-  const dataSelecionada = new Date(document.getElementById('filtroDataPagamentos').value).toLocaleDateString('pt-BR');
+  const dataSelecionada = new Date(document.getElementById('filtroDataPagamentos').value).toISOString().split('T')[0];
   ipcRenderer.send('filtrar-pagamentos-por-data', dataSelecionada);
+  
+  
 });
 
 

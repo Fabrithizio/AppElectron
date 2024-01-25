@@ -1,13 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const{db,insertCliente,insertVenda,} = require('./database.js');
 
-// Função para formatar a data no formato "DD/MM/YYYY"
-function formatarData(data) {
-  const dia = data.getDate().toString().padStart(2, '0');
-  const mes = (data.getMonth() + 1).toString().padStart(2, '0');
-  const ano = data.getFullYear().toString();
-  return `${dia}/${mes}/${ano}`;
-}
+
 
 // responsavel pr pegar dos dados do historico de pagamentos
 ipcMain.on('carregar-dados-historico-vendas', (event) => {
@@ -43,15 +37,24 @@ ipcMain.on('filtrar-vendas-por-data', (event, dataSelecionada) => {
 });
 
 // Use a função formatarData ao filtrar pagamentos por data
-ipcMain.on('filtrar-vendas-por-data', (event, dataSelecionada) => {
+ipcMain.on('filtrar-pagamentos-por-data', (event, dataSelecionada) => {
+  // Verifica se a data está no formato correto
+  const regexData = /^\d{4}-\d{2}-\d{2}$/;
+
+  if (!regexData.test(dataSelecionada)) {
+    console.error('Data inválida. A data deve estar no formato AAAA-MM-DD.');
+    return;
+  }
+
   const dataISO = new Date(dataSelecionada).toISOString().split('T')[0];
-  db.all('SELECT * FROM vendas WHERE DATE(dataVenda) = ?', [dataISO], (err, rows) => {
+  db.all('SELECT * FROM Pagamentos WHERE DATE(data_pagamento) = ?', [dataISO], (err, rows) => {
     if (err) {
       throw err;
     }
-    event.sender.send('resultado-filtro-data', rows);
+    event.sender.send('resultado-filtro-data-pagamentos', rows);
   });
 });
+
 
 
 // lida com o sistema de vendas a fiado
@@ -62,9 +65,7 @@ ipcMain.on('registrar-divida', (event, { cliente, divida }) => {
   });
 });
 
-ipcMain.on('registrar-pagamento', (event, { nomePagador, dividaAnterior, valorPagamento }) => {
-  const agora = new Date();
-  const dataPagamento = formatarData(agora); // Formata a data para "DD/MM/YYYY"
+ipcMain.on('registrar-pagamento', (event, { nomePagador, dividaAnterior, valorPagamento, dataHoraPagamento }) => {
   const dividaRestante = dividaAnterior - valorPagamento;
 
   db.serialize(() => {
@@ -76,7 +77,7 @@ ipcMain.on('registrar-pagamento', (event, { nomePagador, dividaAnterior, valorPa
       }
 
       // Registra o pagamento na tabela Pagamentos com as novas colunas
-      db.run('INSERT INTO Pagamentos (nome_pagador, divida_anterior, valor_pago, divida_restante, data_pagamento) VALUES (?, ?, ?, ?, ?)', [nomePagador, dividaAnterior, valorPagamento, dividaRestante, dataPagamento], function(err) {
+      db.run('INSERT INTO Pagamentos (nome_pagador, divida_anterior, valor_pago, divida_restante, data_pagamento) VALUES (?, ?, ?, ?, ?)', [nomePagador, dividaAnterior, valorPagamento, dividaRestante, dataHoraPagamento], function(err) {
         if (err) {
           event.sender.send('erro', 'Erro ao registrar o pagamento: ' + err.message);
           return;
@@ -88,6 +89,8 @@ ipcMain.on('registrar-pagamento', (event, { nomePagador, dividaAnterior, valorPa
     });
   });
 });
+
+
 
 
 // confirmação de envio do cadastro de clientes para o banco
@@ -156,7 +159,7 @@ ipcMain.on('get-activities-by-client', (event, clientName) => {
 //controle do sistema electron
 function createWindow() {
   const win = new BrowserWindow({
-    width: 950,
+    width: 900,
     height: 700,
     webPreferences: {
       nodeIntegration: true, // Habilita o 'require' no processo de renderização
