@@ -53,29 +53,36 @@ ipcRenderer.on('autocomplete-results', (event, rows) => {
     }
 });
 
-
 function criarCallbackPagamento(row, pagamento) {
-    return function() {
-      var valorPagamento = parseFloat(pagamento.value);
-      if (isNaN(valorPagamento) || valorPagamento <= 0) {
-        showModal('Por favor, insira um valor de pagamento válido.');
-        return;
-      }
-      var dividaAnterior = row.divida;
-      var dividaRestante = dividaAnterior - valorPagamento;
-      var nomePagador = row.nome;
-  
-      // Envia um evento IPC com os detalhes do pagamento
-      ipcRenderer.send('registrar-pagamento', { nomePagador, dividaAnterior, valorPagamento, dividaRestante });
+  return function() {
+    var valorPagamento = parseFloat(pagamento.value);
+    var dividaAnterior = row.divida;
+    
+    if (isNaN(valorPagamento) || valorPagamento <= 0) {
+      showModal('Por favor, insira um valor de pagamento válido.');
+      return;
+    }
+    
+    // Verifica se o valor do pagamento é maior do que a dívida
+    if (valorPagamento > dividaAnterior) {
+      showModal('O valor do pagamento não pode ser maior do que a dívida.');
+      return;
+    }
+    
+    var dividaRestante = dividaAnterior - valorPagamento;
+    var nomePagador = row.nome;
 
-      // Exibe uma mensagem de sucesso
-      showModal('Pagamento Efetuado');
+    // Envia um evento IPC com os detalhes do pagamento
+    ipcRenderer.send('registrar-pagamento', { nomePagador, dividaAnterior, valorPagamento, dividaRestante });
 
-      // Limpa o campo de entrada
-      pagamento.value = '';
+    // Exibe uma mensagem de sucesso
+    showModal('Pagamento Efetuado');
 
-    };
+    // Limpa o campo de entrada
+    pagamento.value = '';
+  };
 }
+
 
 // Função para exibir a janela modal
 function showModal(message) {
