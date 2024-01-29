@@ -1,5 +1,5 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
-const{db,insertCliente,insertVenda,} = require('./database.js');
+const { db, insertCliente, insertVenda, } = require('./database.js');
 
 
 
@@ -12,6 +12,18 @@ ipcMain.on('carregar-dados-historico-vendas', (event) => {
     event.sender.send('dados-historico-vendas', rows);
   });
 });
+
+// lida com o sistema de remover do banco uma venda que foi realizada
+ipcMain.on('delete-venda', (event, id) => {
+  db.run('DELETE FROM vendas WHERE id = ?', id, (err) => {
+    if (err) {
+      console.error(err.message);
+    } else {
+      console.log('Venda excluída com sucesso.');
+    }
+  });
+});
+
 
 
 
@@ -60,8 +72,8 @@ ipcMain.on('filtrar-pagamentos-por-data', (event, dataSelecionada) => {
 // lida com o sistema de vendas a fiado
 ipcMain.on('registrar-divida', (event, { cliente, divida }) => {
   db.serialize(() => {
-      // Adiciona o valor da dívida à dívida atual do cliente na tabela Clientes
-      db.run('UPDATE Clientes SET divida = divida + ? WHERE nome = ?', [divida, cliente]);
+    // Adiciona o valor da dívida à dívida atual do cliente na tabela Clientes
+    db.run('UPDATE Clientes SET divida = divida + ? WHERE nome = ?', [divida, cliente]);
   });
 });
 
@@ -70,14 +82,14 @@ ipcMain.on('registrar-pagamento', (event, { nomePagador, dividaAnterior, valorPa
 
   db.serialize(() => {
     // Atualiza a dívida do cliente na tabela Clientes
-    db.run('UPDATE Clientes SET divida = ? WHERE nome = ?', [dividaRestante, nomePagador], function(err) {
+    db.run('UPDATE Clientes SET divida = ? WHERE nome = ?', [dividaRestante, nomePagador], function (err) {
       if (err) {
         event.sender.send('erro', 'Erro ao atualizar a dívida do cliente: ' + err.message);
         return;
       }
 
       // Registra o pagamento na tabela Pagamentos com as novas colunas
-      db.run('INSERT INTO Pagamentos (nome_pagador, divida_anterior, valor_pago, divida_restante, data_pagamento) VALUES (?, ?, ?, ?, ?)', [nomePagador, dividaAnterior, valorPagamento, dividaRestante, dataHoraPagamento], function(err) {
+      db.run('INSERT INTO Pagamentos (nome_pagador, divida_anterior, valor_pago, divida_restante, data_pagamento) VALUES (?, ?, ?, ?, ?)', [nomePagador, dividaAnterior, valorPagamento, dividaRestante, dataHoraPagamento], function (err) {
         if (err) {
           event.sender.send('erro', 'Erro ao registrar o pagamento: ' + err.message);
           return;
@@ -106,34 +118,34 @@ ipcMain.on('submit-venda', (event, data) => {
 //sistema para lidar com a busca de clientes no banco para a vendas
 ipcMain.on('search', (event, searchTerm) => {
   console.log('Evento search recebido:', searchTerm);
-  db.all('SELECT * FROM Clientes WHERE nome = ?', [searchTerm], function(err, rows) {
-      if (err) {
-          console.error(err);
-          return;
-      }
-      event.sender.send('search-results', rows);
+  db.all('SELECT * FROM Clientes WHERE nome = ?', [searchTerm], function (err, rows) {
+    if (err) {
+      console.error(err);
+      return;
+    }
+    event.sender.send('search-results', rows);
   });
 });
 
 // lida com o sistema de alto complete da parte esqueda do pesquisar
 ipcMain.on('autocomplete-pesquisa', (event, searchTerm) => {
-  db.all('SELECT nome FROM Clientes WHERE nome LIKE ? LIMIT 10', [searchTerm + '%'], function(err, rows) {
-      if (err) {
-          console.error(err);
-          return;
-      }
-      event.sender.send('autocomplete-results', rows);
+  db.all('SELECT nome FROM Clientes WHERE nome LIKE ? LIMIT 10', [searchTerm + '%'], function (err, rows) {
+    if (err) {
+      console.error(err);
+      return;
+    }
+    event.sender.send('autocomplete-results', rows);
   });
 });
 
 // Lida com o sistema de auto-completar o nome do cliente
 ipcMain.on('autocomplete-client-name', (event, clientName) => {
-  db.all('SELECT nome FROM Clientes WHERE nome LIKE ? LIMIT 5', [clientName + '%'], function(err, rows) {
-      if (err) {
-          console.error(err);
-          return;
-      }
-      event.sender.send('autocomplete-client-name-results', rows);
+  db.all('SELECT nome FROM Clientes WHERE nome LIKE ? LIMIT 5', [clientName + '%'], function (err, rows) {
+    if (err) {
+      console.error(err);
+      return;
+    }
+    event.sender.send('autocomplete-client-name-results', rows);
   });
 });
 
@@ -144,13 +156,13 @@ ipcMain.on('autocomplete-client-name', (event, clientName) => {
 
 //responsavel pelos sistema de historio 
 ipcMain.on('get-activities-by-date', (event, date) => {
-  getActivitiesByDate(date, function(rows) {
+  getActivitiesByDate(date, function (rows) {
     event.sender.send('activities-by-date-results', rows);
   });
 });
 
 ipcMain.on('get-activities-by-client', (event, clientName) => {
-  getActivitiesByClient(clientName, function(rows) {
+  getActivitiesByClient(clientName, function (rows) {
     event.sender.send('activities-by-client-results', rows);
   });
 });
@@ -159,7 +171,7 @@ ipcMain.on('get-activities-by-client', (event, clientName) => {
 //controle do sistema electron
 function createWindow() {
   const win = new BrowserWindow({
-    width: 900,
+    width: 880,
     height: 700,
     webPreferences: {
       nodeIntegration: true, // Habilita o 'require' no processo de renderização

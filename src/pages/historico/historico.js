@@ -8,21 +8,37 @@ function inserirDadosNaTabela(dadosVendas) {
     const linha = tabelaHistoricoVendas.insertRow(0);
     linha.insertCell(0).textContent = venda.id;
     linha.insertCell(1).textContent = venda.cliente;
-    linha.insertCell(2).textContent = venda.tipo;
-    linha.insertCell(3).textContent = venda.genero;
-    linha.insertCell(4).textContent = venda.categoria;
-    linha.insertCell(5).textContent = venda.marca;
-    linha.insertCell(6).textContent = venda.descricao;
-    linha.insertCell(7).textContent = venda.preco.toFixed(2);
-    linha.insertCell(8).textContent = venda.quantidade;
+    linha.insertCell(2).textContent = venda.descricao;
+    linha.insertCell(3).textContent = venda.preco.toFixed(2);
 
     // Converte a data do formato ISO para o formato local
     const dataVenda = new Date(venda.dataVenda);
     const dataVendaLocal = dataVenda.toLocaleDateString('pt-BR');
-    linha.insertCell(9).textContent = dataVendaLocal;
-
-    linha.insertCell(10).textContent = venda.metodoPagamento;
+    linha.insertCell(4).textContent = dataVendaLocal;
+    linha.insertCell(5).textContent = venda.metodoPagamento;
+    const deleteCell = linha.insertCell(6);
+  deleteCell.innerHTML = `<button class="delete-button" data-id="${venda.id}">X</button>`;
 });
+
+let deleteButtons = document.querySelectorAll('.delete-button');
+deleteButtons.forEach(button => {
+  let newButton = button.cloneNode(true);
+  button.parentNode.replaceChild(newButton, button);
+});
+
+deleteButtons = document.querySelectorAll('.delete-button');
+deleteButtons.forEach(button => {
+  button.addEventListener('click', (event) => {
+    const id = event.target.getAttribute('data-id');
+    const confirmDelete = window.confirm('Tem certeza de que deseja excluir esta venda?');
+    if (confirmDelete) {
+      ipcRenderer.send('delete-venda', id);
+    }
+  });
+});
+
+
+
 
 }
 

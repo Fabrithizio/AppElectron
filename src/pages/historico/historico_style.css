@@ -5,6 +5,12 @@
 body{
   background-color: rgb(211, 211, 211);
 }
+.delete-button {
+  color: rgb(189, 3, 3); /* Cor do texto */
+  font-size: 20px; /* Tamanho do texto */
+  cursor: pointer; /* Muda o cursor para uma mãozinha */
+}
+
 .container-historico{
   border: solid 1px;
   
