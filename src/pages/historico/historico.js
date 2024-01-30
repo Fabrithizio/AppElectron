@@ -30,12 +30,10 @@ deleteButtons = document.querySelectorAll('.delete-button');
 deleteButtons.forEach(button => {
   button.addEventListener('click', (event) => {
     const id = event.target.getAttribute('data-id');
-    const confirmDelete = window.confirm('Tem certeza de que deseja excluir esta venda?');
-    if (confirmDelete) {
-      ipcRenderer.send('delete-venda', id);
-    }
+    ipcRenderer.send('confirm-delete', id);
   });
 });
+
 
 
 

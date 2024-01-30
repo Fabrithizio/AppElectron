@@ -1,6 +1,32 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
-const { db, insertCliente, insertVenda, } = require('./database.js');
+const { app, BrowserWindow, ipcMain,dialog } = require('electron');
+const { db, insertCliente, insertVenda, } = require('./database.js')
 
+
+
+// cria um pop-up para o sistema de exclusão da tavelas de vendas no historico  
+ipcMain.on('confirm-delete', (event, id) => {
+  const options = {
+    type: 'question',
+    buttons: ['Cancelar', 'Excluir'],
+    defaultId: 0,
+    title: 'Confirmar exclusão',
+    message: 'Tem certeza de que deseja excluir esta venda?',
+  };
+
+  dialog.showMessageBox(options).then((response) => {
+    if (response.response === 1) {
+      // Se o usuário clicou em 'Excluir', exclua a venda
+      db.run('DELETE FROM vendas WHERE id = ?', id, (err) => {
+        if (err) {
+          console.error(err.message);
+        } else {
+          console.log('Venda excluída com sucesso.');
+          
+        }
+      });
+    }
+  });
+});
 
 
 // responsavel pr pegar dos dados do historico de pagamentos
@@ -20,9 +46,11 @@ ipcMain.on('delete-venda', (event, id) => {
       console.error(err.message);
     } else {
       console.log('Venda excluída com sucesso.');
+      event.sender.send('carregar-dados-historico-vendas');
     }
   });
 });
+
 
 
 
