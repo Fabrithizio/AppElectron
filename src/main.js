@@ -1,9 +1,7 @@
-const { app, BrowserWindow, ipcMain,dialog } = require('electron');
-const { db, insertCliente, insertVenda, } = require('./database.js')
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { db, insertCliente, insertVenda } = require('./database.js');
 
-
-
-// cria um pop-up para o sistema de exclusão da tavelas de vendas no historico  
+// Cria um pop-up para o sistema de exclusão das vendas no histórico
 ipcMain.on('confirm-delete', (event, id) => {
   const options = {
     type: 'question',
@@ -15,13 +13,39 @@ ipcMain.on('confirm-delete', (event, id) => {
 
   dialog.showMessageBox(options).then((response) => {
     if (response.response === 1) {
-      // Se o usuário clicou em 'Excluir', exclua a venda
-      db.run('DELETE FROM vendas WHERE id = ?', id, (err) => {
+      // Se o usuário clicou em 'Excluir', obtenha os detalhes da venda primeiro
+      db.get('SELECT * FROM vendas WHERE id = ?', id, (err, venda) => {
         if (err) {
           console.error(err.message);
         } else {
-          console.log('Venda excluída com sucesso.');
-          
+          // Se a venda foi feita a crédito, abata o valor da venda da dívida do cliente
+          if (venda.metodoPagamento === 'Fiado') {
+            db.run('UPDATE Clientes SET divida = divida - ? WHERE nome = ?', [venda.preco, venda.cliente], (err) => {
+              if (err) {
+                console.error(err.message);
+              } else {
+                console.log('Dívida do cliente atualizada com sucesso.');
+
+                // Agora exclua a venda
+                db.run('DELETE FROM vendas WHERE id = ?', id, (err) => {
+                  if (err) {
+                    console.error(err.message);
+                  } else {
+                    console.log('Venda excluída com sucesso.');
+                  }
+                });
+              }
+            });
+          } else {
+            // Se a venda não foi feita a crédito, apenas exclua a venda
+            db.run('DELETE FROM vendas WHERE id = ?', id, (err) => {
+              if (err) {
+                console.error(err.message);
+              } else {
+                console.log('Venda excluída com sucesso.');
+              }
+            });
+          }
         }
       });
     }
