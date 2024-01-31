@@ -89,7 +89,7 @@ ipcMain.on('carregar-dados-historico-pagamentos', (event) => {
 
 //responsavel por filtra o  hstorico de vendas
 ipcMain.on('filtrar-vendas-por-data', (event, dataSelecionada) => {
-  db.all('SELECT * FROM vendas WHERE dataVenda LIKE ?', [`${dataSelecionada}%`], (err, rows) => {
+  db.all('SELECT * FROM vendas WHERE DATE(dataVenda) = ?', [dataSelecionada], (err, rows) => {
     if (err) {
       throw err;
     }
@@ -126,8 +126,11 @@ ipcMain.on('registrar-divida', (event, { cliente, divida }) => {
   });
 });
 
-ipcMain.on('registrar-pagamento', (event, { nomePagador, dividaAnterior, valorPagamento, dataHoraPagamento }) => {
+ipcMain.on('registrar-pagamento', (event, { nomePagador, dividaAnterior, valorPagamento }) => {
   const dividaRestante = dividaAnterior - valorPagamento;
+
+  // Obtém a data atual no formato 'YYYY-MM-DD'
+  var dataPagamento = new Date().toISOString().slice(0,10);
 
   db.serialize(() => {
     // Atualiza a dívida do cliente na tabela Clientes
@@ -138,7 +141,7 @@ ipcMain.on('registrar-pagamento', (event, { nomePagador, dividaAnterior, valorPa
       }
 
       // Registra o pagamento na tabela Pagamentos com as novas colunas
-      db.run('INSERT INTO Pagamentos (nome_pagador, divida_anterior, valor_pago, divida_restante, data_pagamento) VALUES (?, ?, ?, ?, ?)', [nomePagador, dividaAnterior, valorPagamento, dividaRestante, dataHoraPagamento], function (err) {
+      db.run('INSERT INTO Pagamentos (nome_pagador, divida_anterior, valor_pago, divida_restante, data_pagamento) VALUES (?, ?, ?, ?, ?)', [nomePagador, dividaAnterior, valorPagamento, dividaRestante, dataPagamento], function (err) {
         if (err) {
           event.sender.send('erro', 'Erro ao registrar o pagamento: ' + err.message);
           return;
@@ -150,6 +153,7 @@ ipcMain.on('registrar-pagamento', (event, { nomePagador, dividaAnterior, valorPa
     });
   });
 });
+
 
 
 

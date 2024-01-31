@@ -10,15 +10,18 @@ function inserirDadosNaTabela(dadosVendas) {
     linha.insertCell(1).textContent = venda.cliente;
     linha.insertCell(2).textContent = venda.descricao;
     linha.insertCell(3).textContent = venda.preco.toFixed(2);
-
-    // Converte a data do formato ISO para o formato local
-    const dataVenda = new Date(venda.dataVenda);
-    const dataVendaLocal = dataVenda.toLocaleDateString('pt-BR');
-    linha.insertCell(4).textContent = dataVendaLocal;
+  
+    // Formata a data para o formato 'dia/mês/ano'
+    const dataVenda = venda.dataVenda;
+    const partesData = dataVenda.split('-');
+    const dataFormatada = `${partesData[2]}/${partesData[1]}/${partesData[0]}`;
+    linha.insertCell(4).textContent = dataFormatada;
+    
     linha.insertCell(5).textContent = venda.metodoPagamento;
     const deleteCell = linha.insertCell(6);
-  deleteCell.innerHTML = `<button class="delete-button" data-id="${venda.id}">X</button>`;
-});
+    deleteCell.innerHTML = `<button class="delete-button" data-id="${venda.id}">X</button>`;
+  });
+  
 
 let deleteButtons = document.querySelectorAll('.delete-button');
 deleteButtons.forEach(button => {
@@ -70,7 +73,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
       ipcRenderer.send('carregar-dados-historico-pagamentos');
     });
   }
-
   function inserirDadosNaTabelaPagamentos(dadosPagamentos) {
     const tabelaHistoricoPagamentos = document.getElementById('tabela-historico-pagamentos').getElementsByTagName('tbody')[0];
     tabelaHistoricoPagamentos.innerHTML = ''; // Limpa a tabela antes de adicionar novos dados
@@ -91,13 +93,13 @@ document.addEventListener('DOMContentLoaded', (event) => {
       celulaDividaRestante.textContent = pagamento.divida_restante.toFixed(2);
       celulaDividaRestante.classList.add('divida-restante');
     
-      // Converte a data do formato ISO para o formato local
+      // Converte a data do formato ISO para o formato local 'DD/MM/YYYY'
       const dataPagamento = new Date(pagamento.data_pagamento);
-      const dataPagamentoLocal = dataPagamento.toLocaleDateString('pt-BR');
-      linha.insertCell(4).textContent = dataPagamentoLocal;
+      const dataFormatada = dataPagamento.toLocaleDateString('pt-BR');
+      linha.insertCell(4).textContent = dataFormatada;
     });
-    
   }
+  
   // envia uma chamada para o main 
   ipcRenderer.on('dados-historico-pagamentos', (event, dadosPagamentos) => {
     inserirDadosNaTabelaPagamentos(dadosPagamentos);

@@ -54,9 +54,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
   // form vendas ↓↓↓
   function getDataHoraLocal() {
     const agora = new Date();
-    return agora.toISOString();
+  
+    // Retorna apenas a parte da data no formato 'YYYY-MM-DD'
+    const dataISO = agora.toISOString().split('T')[0];
+    return dataISO;
   }
-
+  
 
   const vendaForm = document.querySelector('#vendaForm');
   if (vendaForm) {

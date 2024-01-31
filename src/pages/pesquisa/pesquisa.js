@@ -72,8 +72,10 @@ function criarCallbackPagamento(row, pagamento) {
     var dividaRestante = dividaAnterior - valorPagamento;
     var nomePagador = row.nome;
 
-    // Obtém a data e a hora atuais no formato ISO
-    var dataHoraPagamento = new Date().toISOString();
+
+    // Obtém a data atual no formato 'DD/MM/YYYY'
+var dataPagamento = new Date().toLocaleDateString('pt-BR');
+
 
     // Envia um evento IPC com os detalhes do pagamento
     ipcRenderer.send('registrar-pagamento', { nomePagador, dividaAnterior, valorPagamento, dividaRestante, dataHoraPagamento });
