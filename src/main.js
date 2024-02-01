@@ -76,9 +76,6 @@ ipcMain.on('delete-venda', (event, id) => {
 });
 
 
-
-
-
 // historico de pagamentos
 ipcMain.on('carregar-dados-historico-pagamentos', (event) => {
   db.all('SELECT * FROM Pagamentos', [], (err, rows) => {
