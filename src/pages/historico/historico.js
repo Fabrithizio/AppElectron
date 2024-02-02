@@ -37,8 +37,6 @@ deleteButtons.forEach(button => {
 }
 
 
-
-
 document.addEventListener('DOMContentLoaded', (event) => {
   const botaoCarregar = document.getElementById('carregarHistorico');
   if (botaoCarregar) {

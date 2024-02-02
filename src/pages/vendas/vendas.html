@@ -15,16 +15,23 @@
 
       <h1>Realizar Venda</h1>
       
-      <label for="cliente">Cliente:</label>
-      <input type="text" id="cliente" name="cliente">
+      
+      <input type="text" id="cliente" name="cliente" placeholder="Cliente">
       <div class="container-auto-complete">
         <div id="autocomplete-list"></div>
       </div>
       
-
-      <div id="objetoDiv">
-        <label for="descricao" >Descrição dos Produtos:</label>
-        <textarea name="descricao" id="descricao" cols="39" rows="5"></textarea>
+      <div id="itensDiv">
+        <label for="itens">Itens:</label>
+        <div id="itens">
+          <div class="item">
+            <input type="text" class="item-nome" placeholder="Nome do item">
+            <input type="number" class="item-quantidade" placeholder="Quantidade">
+            <input type="number" class="item-valor" placeholder="Valor" step="0.01">
+            <button type="button" class="adicionarItem , addRemover">Adicionar</button>
+            
+          </div>
+        </div>
       </div>
 
       <label for="pagamento">Método de Pagamento:</label>
@@ -36,10 +43,11 @@
         <option value="Cartao de Debito">Cartão Credito</option>
       </select>
       
+      <textarea id="descricao" name="descricao" cols="10" rows="25" readonly></textarea>
+      <button type="button" class="removerItem , addRemover">Remover</button>
 
       <label for="preco">Valor Total:</label>
       <input type="number" id="preco" name="preco" step="0.01">
-
 
       <input type="submit" value="Realizar Venda" id="vender" >
 

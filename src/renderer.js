@@ -94,9 +94,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
         document.getElementById('descricao').value = '';
         document.getElementById('preco').value = '';
         document.getElementById('metodo_pagamento').value = '';
+        itens = []; 
+        
         // Adicione aqui todos os outros campos que você deseja limpar
       }
-      limparCampos(); // Limpa os campos após o envio
+      limparCampos();
+      // Limpa os campos após o envio
       // Exibe uma mensagem de sucesso
       showModal('Venda Realizada');
     });

@@ -51,7 +51,7 @@ h1{
     margin: auto;
     margin-top: 40px;
     width: 350px;
-    height: 450px;
+    height: 540px;
     background-color: #858484da;
     display: flex;
     flex-direction: column;
@@ -60,9 +60,14 @@ h1{
     font-family: Arial, Helvetica, sans-serif;
     
 }
+#cliente{
+    margin-top: 10px;
+}
 #descricao{
     margin-left: 22px;
     padding: 5px;
+    width: 82.9%;
+
 }
 #vendaForm input{
     width: 85%;
@@ -79,8 +84,17 @@ h1{
     width: 50%;
     margin-left: 22px;
     font-size: 12pt;
+    margin-bottom: 6px;
 }
-
+.addRemover{
+    width: 60%;
+    margin-left: 70px;
+    cursor: pointer;
+    margin-top: 3px;
+}
+.addRemover:hover{
+    background-color: #888;
+}
 #vender{
     height: 30px;
     background-color: rgb(10, 165, 10);

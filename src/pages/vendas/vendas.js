@@ -1,5 +1,63 @@
+var itens = [];
 (function() {
     const { ipcRenderer } = require('electron');
+
+
+
+
+    document.querySelector('.adicionarItem').addEventListener('click', function() {
+      var nomeItem = document.querySelector('.item-nome').value;
+      var quantidadeItem = document.querySelector('.item-quantidade').value;
+      var valorItem = document.querySelector('.item-valor').value;
+    
+      var item = {
+        nome: nomeItem,
+        quantidade: quantidadeItem,
+        valor: valorItem
+      };
+      itens.push(item);
+    
+      atualizarResumoItens();
+      atualizarValorTotal();
+    
+      // Limpa os campos do item
+      document.querySelector('.item-nome').value = '';
+      document.querySelector('.item-quantidade').value = '';
+      document.querySelector('.item-valor').value = '';
+    });
+    
+    document.querySelector('.removerItem').addEventListener('click', function() {
+    
+      itens.pop();
+    
+      atualizarResumoItens();
+      atualizarValorTotal();
+    });
+    
+    function atualizarResumoItens() {
+      var descricaoCompra = '';
+      for (var i = 0; i < itens.length; i++) {
+        descricaoCompra += 'Produto: ' + itens[i].nome + ', Quantidade: ' + itens[i].quantidade + ', Preço: R$' + itens[i].valor + '\n';
+      }
+      document.getElementById('descricao').value = descricaoCompra;
+    }
+    
+    function atualizarValorTotal() {
+      var valorTotal = 0;
+      for (var i = 0; i < itens.length; i++) {
+        valorTotal += itens[i].quantidade * itens[i].valor;
+      }
+      document.getElementById('preco').value = valorTotal;
+    }
+    
+  
+    
+
+
+
+
+
+
 
     // Função para lidar com a funcionalidade de auto-completar o nome do cliente
     function autocompleteClientName() {
