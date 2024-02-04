@@ -1,4 +1,5 @@
 const { ipcRenderer } = require('electron');
+const moment = require('moment');
 
 function inserirDadosNaTabela(dadosVendas) {
   const tabelaHistoricoVendas = document.getElementById('tabela-historico').getElementsByTagName('tbody')[0];
@@ -93,10 +94,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
       celulaDividaRestante.textContent = pagamento.divida_restante.toFixed(2);
       celulaDividaRestante.classList.add('divida-restante');
     
-      // Converte a data do formato ISO para o formato local 'DD/MM/YYYY'
-      const dataPagamento = new Date(pagamento.data_pagamento);
-      const dataFormatada = dataPagamento.toLocaleDateString('pt-BR');
-      linha.insertCell(4).textContent = dataFormatada;
+   // Converte a data do formato ISO para o formato local 'DD/MM/YYYY'
+   var dataPagamento = pagamento.data_pagamento;
+   const dataFormatada = moment(dataPagamento).format('DD/MM/YYYY');
+   linha.insertCell(4).textContent = dataFormatada;
+
     });
   }
   
@@ -105,9 +107,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     inserirDadosNaTabelaPagamentos(dadosPagamentos);
   });
 
-  //lida com o sistema de filtro para pagamentos
 
-// No arquivo historico.js
 const botaoFiltrarPagamentos = document.getElementById('filtrarPorDataPagamentos');
 botaoFiltrarPagamentos.addEventListener('click', () => {
   const dataSelecionada = new Date(document.getElementById('filtroDataPagamentos').value).toISOString().split('T')[0];

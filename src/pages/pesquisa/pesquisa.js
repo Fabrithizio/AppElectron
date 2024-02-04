@@ -78,7 +78,7 @@ var dataPagamento = new Date().toLocaleDateString('pt-BR');
 
 
     // Envia um evento IPC com os detalhes do pagamento
-    ipcRenderer.send('registrar-pagamento', { nomePagador, dividaAnterior, valorPagamento, dividaRestante, dataHoraPagamento });
+    ipcRenderer.send('registrar-pagamento', { nomePagador, dividaAnterior, valorPagamento, dividaRestante, dataPagamento });
 
     // Exibe uma mensagem de sucesso
     showModal('Pagamento Efetuado');

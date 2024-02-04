@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const { db, insertCliente, insertVenda } = require('./database.js');
+const moment = require('moment');
 
 // Cria um pop-up para o sistema de exclusão das vendas no histórico
 ipcMain.on('confirm-delete', (event, id) => {
@@ -125,12 +126,11 @@ ipcMain.on('registrar-divida', (event, { cliente, divida }) => {
     db.run('UPDATE Clientes SET divida = divida + ? WHERE nome = ?', [divida, cliente]);
   });
 });
-
 ipcMain.on('registrar-pagamento', (event, { nomePagador, dividaAnterior, valorPagamento }) => {
   const dividaRestante = dividaAnterior - valorPagamento;
-
   // Obtém a data atual no formato 'YYYY-MM-DD'
-  var dataPagamento = new Date().toISOString().slice(0,10);
+  const dataPagamento = moment().format('YYYY-MM-DD');
+
 
   db.serialize(() => {
     // Atualiza a dívida do cliente na tabela Clientes
