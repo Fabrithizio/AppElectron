@@ -11,6 +11,30 @@ body{
   cursor: pointer; /* Muda o cursor para uma mãozinha */
 }
 
+table {
+  font-family: Arial, sans-serif;
+  font-size: 16px;
+}
+
+
+td, th {
+  padding: 10px;
+  white-space: pre-line;
+  font-weight: bold;
+  
+  
+}
+
+table {
+  color: #333; /* Cor do texto */
+  background-color: #f9f9f9; /* Cor de fundo */
+}
+tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+
+
 .container-historico{
   border: solid 1px;
   
@@ -69,6 +93,7 @@ h2{
 
 th{
   padding: 6px;
+  color: #860f69;
 }
 
 #tabela-historico th,

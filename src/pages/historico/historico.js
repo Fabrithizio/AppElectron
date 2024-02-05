@@ -9,8 +9,17 @@ function inserirDadosNaTabela(dadosVendas) {
     const linha = tabelaHistoricoVendas.insertRow(0);
     linha.insertCell(0).textContent = venda.id;
     linha.insertCell(1).textContent = venda.cliente;
-    linha.insertCell(2).textContent = venda.descricao;
-    linha.insertCell(3).textContent = venda.preco.toFixed(2);
+    var descricao = venda.descricao.split('\n');
+    var descricaoFormatada = '';
+    for (var i = 0; i < descricao.length; i++) {
+      // Adiciona cor e negrito aos diferentes componentes da descrição
+      descricao[i] = descricao[i].replace('Item:', '<span style="color: maroon; font-weight: bold;">Item:</span>');
+      descricao[i] = descricao[i].replace('Quant:', '<span style="color: blue; font-weight: bold;">Quant:</span>');
+      descricao[i] = descricao[i].replace('Valor: R$', '<span style="color: green; font-weight: bold;">Valor: R$ </span>');
+      descricaoFormatada += descricao[i] + '<br>';
+    }
+    linha.insertCell(2).innerHTML = descricaoFormatada;
+    linha.insertCell(3).textContent = 'R$ ' + venda.preco.toFixed(2);
   
     // Formata a data para o formato 'dia/mês/ano'
     const dataVenda = venda.dataVenda;
@@ -23,7 +32,7 @@ function inserirDadosNaTabela(dadosVendas) {
     deleteCell.innerHTML = `<button class="delete-button" data-id="${venda.id}">X</button>`;
   });
   
-
+// botão que exclui uma venda do sistema
 let deleteButtons = document.querySelectorAll('.delete-button');
 deleteButtons.forEach(button => {
   let newButton = button.cloneNode(true);
@@ -83,15 +92,15 @@ document.addEventListener('DOMContentLoaded', (event) => {
       linha.insertCell(0).textContent = pagamento.nome_pagador;
       
       const celulaDividaAnterior = linha.insertCell(1);
-      celulaDividaAnterior.textContent = pagamento.divida_anterior.toFixed(2);
+      celulaDividaAnterior.textContent = 'R$ ' +  pagamento.divida_anterior.toFixed(2);
       celulaDividaAnterior.classList.add('divida-anterior');
     
       const celulaValorPago = linha.insertCell(2);
-      celulaValorPago.textContent = pagamento.valor_pago.toFixed(2);
+      celulaValorPago.textContent = 'R$ ' +  pagamento.valor_pago.toFixed(2);
       celulaValorPago.classList.add('valor-pago');
     
       const celulaDividaRestante = linha.insertCell(3);
-      celulaDividaRestante.textContent = pagamento.divida_restante.toFixed(2);
+      celulaDividaRestante.textContent = 'R$ ' +  pagamento.divida_restante.toFixed(2);
       celulaDividaRestante.classList.add('divida-restante');
     
    // Converte a data do formato ISO para o formato local 'DD/MM/YYYY'

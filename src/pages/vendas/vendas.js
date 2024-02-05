@@ -37,7 +37,7 @@ var itens = [];
     function atualizarResumoItens() {
       var descricaoCompra = '';
       for (var i = 0; i < itens.length; i++) {
-        descricaoCompra += 'Produto: ' + itens[i].nome + ', Quantidade: ' + itens[i].quantidade + ', Preço: R$' + itens[i].valor + '\n';
+        descricaoCompra += 'Item: ' + itens[i].nome + ' / Quant: ' + itens[i].quantidade + ' / Valor: R$' + itens[i].valor + '\n';
       }
       document.getElementById('descricao').value = descricaoCompra;
     }
