@@ -69,10 +69,13 @@ tr:nth-child(even) {
 .botao-historico{
   padding: 2px;
   font-size: 12pt;
-  background-color: rgb(91, 231, 154);
+  background-color: #0aad9f;
   color: #000000;
   width: 110px;
   cursor: pointer;
+}
+.botao-historico:hover{
+  background-color: #00c8e2;
 }
 
 .bot-bar{

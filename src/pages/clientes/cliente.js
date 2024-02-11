@@ -1,4 +1,3 @@
-
 (function() {
 const {db} = require('../../database.js')
 const { ipcRenderer } = require('electron');
@@ -86,24 +85,7 @@ document.getElementById('updateButton').addEventListener('click', function() {
 
   // Envia um evento IPC com os valores do formulário de clientes
   ipcRenderer.send('update-cliente', { id: clienteId, nome, DataNascimento, cpf, rg, endereco, telefone, email, divida, dataPagamento });
+
 });
-
-
-// Itera sobre os resultados de auto-completar
-for (var i = 0; i < rows.length; i++) {
-  // Cria um novo elemento para cada resultado
-  var result = document.createElement('div');
-  // Define o texto do elemento para o nome do resultado
-  result.textContent = rows[i].nome;
-
-  // Adiciona uma classe CSS com base em se o índice é par ou ímpar
-  if (i % 2 === 0) {
-    result.className = 'nome-par';
-  } else {
-    result.className = 'nome-impar';
-  }
-
-  // ...
-}
 
 })();

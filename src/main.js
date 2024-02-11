@@ -244,8 +244,17 @@ ipcMain.on('submit-cliente', (event, data) => {
 });
 
 ipcMain.on('update-cliente', (event, data) => {
+  // Atualiza os dados
   updateCliente(data);
+
+  // Mostra um alerta indicando que as alterações foram realizadas
+  dialog.showMessageBox({
+    type: 'info',
+    title: 'Atualização de Dados',
+    message: 'As alterações foram realizadas com sucesso!',
+  });
 });
+
 
 // confirmação de envio dos dados para o banco  do sistema de vendas
 ipcMain.on('submit-venda', (event, data) => {
