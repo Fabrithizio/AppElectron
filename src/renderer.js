@@ -2,12 +2,16 @@ const { ipcRenderer } = require('electron');
 
 document.addEventListener('DOMContentLoaded', (event) => {
   const form = document.querySelector('.clientes');
+  
+ 
+
   if (form) {
     form.addEventListener('submit', (event) => {
       event.preventDefault();
-
+ 
       // Obtém os valores do formulário de clientes
       const nome = document.getElementById('nome').value;
+      const DataNascimento = document.getElementById('dataNascimento').value;
       const cpf = document.getElementById('cpf').value;
       const rg = document.getElementById('rg').value;
       const endereco = document.getElementById('endereco').value;
@@ -22,7 +26,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
       }
 
       // Envia um evento IPC com os valores do formulário de clientes
-      ipcRenderer.send('submit-cliente', { nome, cpf, rg, endereco, telefone, email, divida });
+      ipcRenderer.send('submit-cliente', { nome, DataNascimento, cpf, rg, endereco, telefone, email, divida });
 
       // Exibe uma mensagem de sucesso
       showModal('Cliente Cadastrado');
@@ -31,6 +35,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
       form.reset();
     });
   }
+
+
 
 
   // Função para exibir a janela modal

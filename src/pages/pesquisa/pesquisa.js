@@ -125,6 +125,16 @@ ipcRenderer.on('search-results', (event, rows) => {
         nome.className = 'field'; // Adiciona uma classe ao elemento do campo
         result.appendChild(nome);
 
+        var dataNascimento = document.createElement('p');
+        var data = new Date(rows[i].DataNascimento);
+        var dia = ("0" + data.getDate()).slice(-2); // Adiciona um zero à esquerda se o dia for menor que 10
+        var mes = ("0" + (data.getMonth() + 1)).slice(-2); // Adiciona um zero à esquerda se o mês for menor que 10
+        var ano = data.getFullYear();
+        dataNascimento.textContent = 'Data de Nascimento: ' + dia + '/' + mes + '/' + ano;
+        dataNascimento.className = 'field'; // Adiciona uma classe ao elemento do campo
+        result.appendChild(dataNascimento);
+        
+
         var cpf = document.createElement('p');
         cpf.textContent = 'CPF: ' + rows[i].cpf;
         cpf.className = 'field'; // Adiciona uma classe ao elemento do campo

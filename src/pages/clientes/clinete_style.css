@@ -12,7 +12,7 @@ main{
    background-color: #858484da;
    border: solid 1px;
     width: 400px;
-    height: 480px;
+    height: 500px;
     margin: auto;
     margin-top: 35px;
     border-radius: 12px;
@@ -21,6 +21,9 @@ h1{
     font-size: 25pt;
     text-align: center;
     margin-top: 10px;
+}
+#dataNascimento{
+  color: #888;
 }
 .clientes{
     display: flex;
