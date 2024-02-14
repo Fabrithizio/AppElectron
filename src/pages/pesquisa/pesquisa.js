@@ -1,6 +1,7 @@
 // Importa o módulo ipcRenderer do Electron
 const { ipcRenderer } = require('electron');
 
+
 // Função para lidar com a funcionalidade de auto-completar
 function autocomplete() {
     // Obtém o termo de pesquisa do campo de entrada
@@ -170,7 +171,6 @@ ipcRenderer.on('search-results', (event, rows) => {
         titoloPagamento.textContent = 'Pagamento do Cliente';
         result.appendChild(titoloPagamento);
        
-
         var pagamento = document.createElement('input');
         pagamento.type = 'number';
         pagamento.placeholder = 'Valor do pagamento';
@@ -181,7 +181,31 @@ ipcRenderer.on('search-results', (event, rows) => {
         result.appendChild(botaoPagamento);
 
         botaoPagamento.addEventListener('click', criarCallbackPagamento(rows[i], pagamento));
-    // Adiciona o elemento de resultado ao elemento de resultados
+        // Adiciona o elemento de resultado ao elemento de resultados
         results.appendChild(result);
-    }
+
+        //botao que remover o cliente do banco de dados
+
+        for (var i = 0; i < rows.length; i++) {
+          var botaoRemover = document.createElement('button');
+          botaoRemover.textContent = 'Remover';
+          botaoRemover.dataset.id = rows[i].id;
+          result.appendChild(botaoRemover);
+      
+          botaoRemover.addEventListener('click', function(e) {
+            var idCliente = this.dataset.id;
+            ipcRenderer.send('confirm-remove-cliente', idCliente);
+            console.log(idCliente)
+        });
+        
+        ipcRenderer.on('cliente-removido', (event, idCliente) => {
+          console.log('Cliente removido:', idCliente);
+          location.reload(); // Atualiza a página
+        });
+        
+      }
+      
+      
+  }
+
 });

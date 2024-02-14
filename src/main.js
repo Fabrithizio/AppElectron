@@ -2,6 +2,38 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const { db, insertCliente, insertVenda } = require('./database.js');
 const moment = require('moment');
 
+
+// envia o comando para remover o cliente cadastrado do banco de dados 
+ipcMain.on('confirm-remove-cliente', (event, idCliente) => {
+  var options = {
+    type: 'question',
+    buttons: ['Cancelar', 'Excluir'],
+    defaultId: 1,
+    title: 'Confirmação',
+    message: 'Tem certeza de que deseja remover o cliente com ID ' + idCliente + '?',
+  };
+
+  dialog.showMessageBox(null, options).then((response) => {
+      if (response.response === 1) {
+          db.serialize(() => {
+            db.run('DELETE FROM Clientes WHERE id = ?', idCliente, (err) => {
+              if (err) {
+                console.error(err);
+              } else {
+                console.log('Cliente removido com sucesso.');
+                event.sender.send('cliente-removido', idCliente); // Envia um evento de volta para o processo de renderização
+              }
+            });
+          });
+      }
+  });
+});
+
+
+
+
+
+
 // Cria um pop-up para o sistema de exclusão das vendas no histórico
 ipcMain.on('confirm-delete', (event, id) => {
   const options = {
