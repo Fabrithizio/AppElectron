@@ -3,6 +3,28 @@ const { db, insertCliente, insertVenda } = require('./database.js');
 const moment = require('moment');
 
 
+ipcMain.on('verificar-pagamentos', (event) => {
+  let dataAtual = new Date();
+  let tresDiasDepois = new Date();
+  tresDiasDepois.setDate(dataAtual.getDate() + 3);
+
+  db.all("SELECT * FROM clientes WHERE dataPagamento >= ? AND dataPagamento <= ?", [dataAtual.toISOString().split('T')[0], tresDiasDepois.toISOString().split('T')[0]], (err, rows) => {
+    if (err) {
+      throw err;
+    }
+    rows.forEach((row) => {
+      dialog.showMessageBox({
+        type: 'warning',
+        title: `Alerta de Pagamento para ${row.nome.toUpperCase()}`,
+        message: `${row.nome.toUpperCase()} tem um pagamento vencendo em até 3 dias.`
+      });
+      
+      
+    });
+  });
+});
+
+
 // envia o comando para remover o cliente cadastrado do banco de dados 
 ipcMain.on('confirm-remove-cliente', (event, idCliente) => {
   var options = {

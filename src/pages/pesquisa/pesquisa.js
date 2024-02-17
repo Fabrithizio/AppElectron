@@ -127,7 +127,7 @@ ipcRenderer.on('search-results', (event, rows) => {
         result.appendChild(nome);
 
         var dataNascimento = document.createElement('p');
-        var data = new Date(rows[i].DataNascimento);
+        var data = new Date(rows[i].DataNascimento + 'T00:00:00');
         var dia = ("0" + data.getDate()).slice(-2); // Adiciona um zero à esquerda se o dia for menor que 10
         var mes = ("0" + (data.getMonth() + 1)).slice(-2); // Adiciona um zero à esquerda se o mês for menor que 10
         var ano = data.getFullYear();
@@ -166,6 +166,11 @@ ipcRenderer.on('search-results', (event, rows) => {
         divida.textContent = 'Dívida Atual: ' + rows[i].divida;
         divida.className = 'field';
         result.appendChild(divida);
+
+        var DataPagamento = document.createElement('p');
+        DataPagamento.textContent = 'Data de Pagamento: ' + rows[i].dataPagamento;
+        DataPagamento.className = 'field';
+        result.appendChild(DataPagamento);
 
         var titoloPagamento = document.createElement('h2');
         titoloPagamento.textContent = 'Pagamento do Cliente';

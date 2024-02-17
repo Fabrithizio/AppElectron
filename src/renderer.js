@@ -1,14 +1,13 @@
 const { ipcRenderer } = require('electron');
-
 document.addEventListener('DOMContentLoaded', (event) => {
   const form = document.querySelector('.clientes');
-  
- 
+
+
 
   if (form) {
     form.addEventListener('submit', (event) => {
       event.preventDefault();
- 
+
       // Obtém os valores do formulário de clientes
       const nome = document.getElementById('nome').value;
       const DataNascimento = document.getElementById('dataNascimento').value;
@@ -18,6 +17,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
       const telefone = document.getElementById('telefone').value;
       const email = document.getElementById('email').value;
       const divida = document.getElementById('divida').value;
+      const dataPagamento = document.getElementById('dataPagamento').value;
 
       // Verifica se todos os campos obrigatórios estão preenchidos
       if (!nome || !telefone) {
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
       }
 
       // Envia um evento IPC com os valores do formulário de clientes
-      ipcRenderer.send('submit-cliente', { nome, DataNascimento, cpf, rg, endereco, telefone, email, divida });
+      ipcRenderer.send('submit-cliente', { nome, DataNascimento, cpf, rg, endereco, telefone, email, divida, dataPagamento });
 
       // Exibe uma mensagem de sucesso
       showModal('Cliente Cadastrado');
@@ -60,12 +60,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
   // form vendas ↓↓↓
   function getDataHoraLocal() {
     const agora = new Date();
-  
+
     // Retorna apenas a parte da data no formato 'YYYY-MM-DD'
     const dataISO = agora.toISOString().split('T')[0];
     return dataISO;
   }
-  
+
 
   const vendaForm = document.querySelector('#vendaForm');
   if (vendaForm) {
@@ -80,15 +80,15 @@ document.addEventListener('DOMContentLoaded', (event) => {
       const metodoPagamento = document.getElementById('metodo_pagamento').value;
 
       // Verifica se todos os campos estão preenchidos
-      if (!cliente  || !preco ) {
+      if (!cliente || !preco) {
         showModal('Por favor, preencha todos os campos.');
         return; // Impede o envio do formulário
-      } 
+      }
 
       let dados;
-     
-        dados = { cliente, metodoPagamento, descricao, preco, dataVenda };
-    
+
+      dados = { cliente, metodoPagamento, descricao, preco, dataVenda };
+
 
       // Se o pagamento for a prazo (Fiado), adiciona o valor da venda à dívida do cliente
       if (metodoPagamento === 'Fiado') {
@@ -103,8 +103,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
         document.getElementById('descricao').value = '';
         document.getElementById('preco').value = '';
         document.getElementById('metodo_pagamento').value = '';
-        itens = []; 
-        
+        itens = [];
+
         // Adicione aqui todos os outros campos que você deseja limpar
       }
       limparCampos();
