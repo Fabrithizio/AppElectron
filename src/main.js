@@ -2,7 +2,26 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const { db, insertCliente, insertVenda } = require('./database.js');
 const moment = require('moment');
 
+app.on('ready', () => {
+  let dataAtual = new Date();
+  let dia = ("0" + dataAtual.getDate()).slice(-2); // Adiciona um zero à esquerda se o dia for menor que 10
+  let mes = ("0" + (dataAtual.getMonth() + 1)).slice(-2); // Adiciona um zero à esquerda se o mês for menor que 10
 
+  db.all("SELECT * FROM clientes WHERE strftime('%m-%d', DataNascimento) = ?", [mes + '-' + dia], (err, rows) => {
+    if (err) {
+      throw err;
+    }
+    rows.forEach((row) => {
+      dialog.showMessageBox({
+        type: 'info',
+        title: 'Aniversário do Cliente',
+        message: `Hoje é o aniversário do cliente ${row.nome.toUpperCase()}.`
+      });
+    });
+  });
+});
+
+// sistema que verfiaca se esta na data de pagamento do cliente 
 ipcMain.on('verificar-pagamentos', (event) => {
   let dataAtual = new Date();
   let tresDiasDepois = new Date();
@@ -12,17 +31,24 @@ ipcMain.on('verificar-pagamentos', (event) => {
     if (err) {
       throw err;
     }
-    rows.forEach((row) => {
+    if (rows.length === 0) {
       dialog.showMessageBox({
-        type: 'warning',
-        title: `Alerta de Pagamento para ${row.nome.toUpperCase()}`,
-        message: `${row.nome.toUpperCase()} tem um pagamento vencendo em até 3 dias.`
+        type: 'info',
+        title: 'Verificação de Pagamentos',
+        message: 'Não há pagamentos para hoje.'
       });
-      
-      
-    });
+    } else {
+      rows.forEach((row) => {
+        dialog.showMessageBox({
+          type: 'warning',
+          title: `Alerta de Pagamento para ${row.nome.toUpperCase()}`,
+          message: `${row.nome.toUpperCase()} - Esta Na Data De Pagamento.`
+        });
+      });
+    }
   });
 });
+
 
 
 // envia o comando para remover o cliente cadastrado do banco de dados 

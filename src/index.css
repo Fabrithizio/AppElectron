@@ -41,6 +41,9 @@ li{
 li > img{
     width: 35px;
 }
+li > img:hover{
+    width: 40px;
+}
 
 main{
     width: 100%;

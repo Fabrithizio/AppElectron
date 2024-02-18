@@ -168,9 +168,14 @@ ipcRenderer.on('search-results', (event, rows) => {
         result.appendChild(divida);
 
         var DataPagamento = document.createElement('p');
-        DataPagamento.textContent = 'Data de Pagamento: ' + rows[i].dataPagamento;
+        var data = new Date(rows[i].dataPagamento);
+        var dia = ("0" + data.getDate()).slice(-2); // Adiciona um zero à esquerda se o dia for menor que 10
+        var mes = ("0" + (data.getMonth() + 1)).slice(-2); // Adiciona um zero à esquerda se o mês for menor que 10
+        var ano = data.getFullYear();
+        DataPagamento.textContent = 'Data de Pagamento: ' + dia + '/' + mes + '/' + ano;
         DataPagamento.className = 'field';
         result.appendChild(DataPagamento);
+
 
         var titoloPagamento = document.createElement('h2');
         titoloPagamento.textContent = 'Pagamento do Cliente';
@@ -193,6 +198,7 @@ ipcRenderer.on('search-results', (event, rows) => {
 
         for (var i = 0; i < rows.length; i++) {
           var botaoRemover = document.createElement('button');
+          botaoRemover.className = 'ButomDeletDadosCliente'
           botaoRemover.textContent = 'Remover';
           botaoRemover.dataset.id = rows[i].id;
           result.appendChild(botaoRemover);

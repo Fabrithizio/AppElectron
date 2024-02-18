@@ -121,6 +121,7 @@ font-size: 16pt;
 margin-top: 3px;
 
 }
+
 #results-dados button{
  width: 110px;
  font-size: 16pt;
@@ -128,6 +129,17 @@ margin-top: 3px;
  margin-top: 3px;
  background-color: rgb(8, 163, 20);
  cursor: pointer;
+}
+#results-dados .ButomDeletDadosCliente{
+    background-color: #0056d8;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    margin-right: 30px;
+    margin-bottom: 30px;
+}
+#results-dados .ButomDeletDadosCliente:hover{
+    background-color: #4c00d8;
 }
 #results-dados button:hover{
     background-color: rgb(7, 221, 25);
