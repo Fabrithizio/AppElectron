@@ -168,7 +168,7 @@ ipcRenderer.on('search-results', (event, rows) => {
         result.appendChild(divida);
 
         var DataPagamento = document.createElement('p');
-        var data = new Date(rows[i].dataPagamento);
+        var data = new Date(rows[i].dataPagamento + 'T00:00:00');
         var dia = ("0" + data.getDate()).slice(-2); // Adiciona um zero à esquerda se o dia for menor que 10
         var mes = ("0" + (data.getMonth() + 1)).slice(-2); // Adiciona um zero à esquerda se o mês for menor que 10
         var ano = data.getFullYear();

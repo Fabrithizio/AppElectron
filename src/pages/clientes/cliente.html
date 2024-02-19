@@ -7,10 +7,21 @@
 </head>
 <body>
 
-  <main>
+  <main> 
+  <h1>Clientes Banco</h1>
+  <div class="ContainerUpdade">
+   
+    <input type="text" id="search" placeholder="Buscar Cliente">
+    <button id="updateButton" type="button">Atualiar Dados</button>
+  </div>
+  <div class="DivResult">
+      <div id="results">
 
-    
-  <div>
+  </div>
+
+  </div>
+
+
     <h1>Casdastra Cliente</h1>
  <form method="post" class="clientes">
   <input type="text" name="nome" id="nome" placeholder="Nome" required>
@@ -29,6 +40,7 @@
 </form>
 
 
+
 <div id="modal" class="modal">
   <div class="modal-content">
     <span class="close-button">×</span>
@@ -39,6 +51,7 @@
   </main>
 
   <script src="../../renderer.js"></script>
+<script src="cliente.js"></script>
 <script>
   window.onload = function() {
     document.getElementById('telefone').addEventListener('input', function (e) {

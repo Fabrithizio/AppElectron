@@ -1,9 +1,8 @@
 const { ipcRenderer } = require('electron');
 document.addEventListener('DOMContentLoaded', (event) => {
+
+
   const form = document.querySelector('.clientes');
-
-
-
   if (form) {
     form.addEventListener('submit', (event) => {
       event.preventDefault();

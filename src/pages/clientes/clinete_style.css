@@ -12,9 +12,8 @@ main{
    background-color: #858484da;
    border: solid 1px;
     width: 400px;
-    height: 530px;
+    height: 600px;
     margin: auto;
-    margin-top: 35px;
     border-radius: 12px;
 }
 h1{
@@ -22,6 +21,52 @@ h1{
     text-align: center;
    
 }
+.ContainerUpdade{
+  display: flex;
+}
+#search{
+  width: 50%;
+  margin-left: 22px;
+  margin-right: 5px;
+  
+  
+}
+#updateButton{
+  width: 35%;
+  background-color: rgb(3, 143, 199);
+  height: 35px;
+}
+
+#updateButton:hover{
+  background-color: rgb(83, 153, 180);
+}
+
+.DivResult{
+ 
+
+}
+
+#results {
+  position: absolute;
+  z-index: 1;
+  margin-top: 5px;
+  margin-left: 22px;
+  width: 206px;
+  cursor: pointer;
+  margin-top: 3px;
+}
+#results:hover{
+  
+}
+.nome-par {
+  background-color: #f0f0f0; /* Cor para nomes pares */
+}
+
+.nome-impar {
+  background-color: #d0d0d0; /* Cor para nomes ímpares */
+}
+
+
 #dataPagamento{
   color: #888;
 }

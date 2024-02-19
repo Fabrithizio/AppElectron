@@ -23,7 +23,19 @@ function insertCliente({ nome, DataNascimento,  cpf, rg, endereco, telefone, ema
   });
 }
 
-
+// Função para atualizar um cliente no banco de dados
+function updateCliente({ id, nome, DataNascimento, cpf, rg, endereco, telefone, email, divida, dataPagamento }) {
+  db.run('UPDATE Clientes SET nome = ?, DataNascimento = ?, cpf = ?, rg = ?, endereco = ?, telefone = ?, email = ?, divida = ?, dataPagamento = ? WHERE id = ?',
+    [nome, DataNascimento, cpf, rg, endereco, telefone, email, divida, dataPagamento, id],
+    function(err) {
+      if (err) {
+        console.error(err);
+      } else {
+        console.log('Cliente atualizado com sucesso.');
+      }
+    }
+  );
+}
 
 //função que coida do sistema de vendas e banco de dados
 
@@ -56,7 +68,7 @@ db.run(`CREATE TABLE IF NOT EXISTS Pagamentos (
 
 
 
-module.exports = { db, insertCliente, insertVenda };
+module.exports = { db, insertCliente, insertVenda, updateCliente };
 
 
 

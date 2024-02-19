@@ -1,5 +1,5 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
-const { db, insertCliente, insertVenda } = require('./database.js');
+const { db, insertCliente, insertVenda, updateCliente } = require('./database.js');
 const moment = require('moment');
 
 app.on('ready', () => {
@@ -241,6 +241,10 @@ ipcMain.on('registrar-pagamento', (event, { nomePagador, dividaAnterior, valorPa
 // confirmação de envio do cadastro de clientes para o banco
 ipcMain.on('submit-cliente', (event, data) => {
   insertCliente(data);
+});
+
+ipcMain.on('update-cliente', (event, data) => {
+  updateCliente(data);
 });
 
 // confirmação de envio dos dados para o banco  do sistema de vendas
