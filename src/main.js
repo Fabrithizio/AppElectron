@@ -40,6 +40,7 @@ ipcMain.on('verificar-pagamentos', (event) => {
       });
     } else {
       let encontrouPagamento = false;
+      let clientesComPagamento = [];
       rows.forEach((row) => {
         // Converte a data de pagamento do cliente para o formato de data padrão do sistema e define a hora para meia-noite
         let partesData = row.dataPagamento.split('-');
@@ -52,11 +53,7 @@ ipcMain.on('verificar-pagamentos', (event) => {
 
         if (dataIgual) {
           encontrouPagamento = true;
-          dialog.showMessageBox({
-            type: 'warning',
-            title: `Alerta de Pagamento para ${row.nome.toUpperCase()}`,
-            message: `${row.nome.toUpperCase()} - Está na data de pagamento.`
-          });
+          clientesComPagamento.push(row.nome.toUpperCase());
         }
       });
 
@@ -66,11 +63,16 @@ ipcMain.on('verificar-pagamentos', (event) => {
           title: 'Verificação de Pagamentos',
           message: 'Não há clientes com pagamentos a vencer hoje.'
         });
+      } else {
+        dialog.showMessageBox({
+          type: 'warning',
+          title: `Alerta de Pagamento`,
+          message: `//Clientes Na Data de Pagamento// \n > ${clientesComPagamento.join('\n >')}.`
+        });
       }
     }
   });
 });
-
 
 
 
