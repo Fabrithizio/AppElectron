@@ -45,7 +45,7 @@ function insertVenda({ cliente, metodoPagamento, descricao, preco, dataVenda }) 
     db.run('CREATE TABLE IF NOT EXISTS vendas (id INTEGER PRIMARY KEY AUTOINCREMENT,cliente TEXT, metodoPagamento TEXT, descricao TEXT, preco REAL,  dataVenda TEXT)');
 
     // Insere os valores no banco de dados
-    db.run('INSERT INTO vendas (cliente,  metodoPagamento, descricao, preco, dataVenda) VALUES (?, ?, ?, ?, ?)', [cliente,  metodoPagamento, descricao, preco, dataVenda], (err) => {
+    db.run('INSERT INTO vendas (cliente, metodoPagamento, descricao, preco, dataVenda) VALUES (?, ?, ?, ?, ?)', [cliente, metodoPagamento, descricao, preco, dataVenda], (err) => {
       if (err) {
         console.error(err);
       } else {
@@ -55,14 +55,33 @@ function insertVenda({ cliente, metodoPagamento, descricao, preco, dataVenda }) 
   });
 }
 
-// cuida do 
+// excluir apos modificar os dados do banco
+db.serialize(() => {
+  db.run(`UPDATE vendas SET metodoPagamento = 'Credito' WHERE metodoPagamento = 'Cartao de Credito'`, (err) => {
+    if (err) {
+      console.error(err);
+    } else {
+      console.log('Método de pagamento atualizado de Cartao de Credito para Credito.');
+    }
+  });
+
+  db.run(`UPDATE vendas SET metodoPagamento = 'Debito' WHERE metodoPagamento = 'Cartao de Debito'`, (err) => {
+    if (err) {
+      console.error(err);
+    } else {
+      console.log('Método de pagamento atualizado de Cartao de Debito para Debito.');
+    }
+  });
+});
+
+
 function somaVendasUltimos30Dias() {
   return new Promise((resolve, reject) => {
     let dataAtual = new Date();
     let data30DiasAtras = new Date();
 
     // Configura a data para 30 dias atrás
-    data30DiasAtras.setDate(dataAtual.getDate() - 30);
+    data30DiasAtras.setDate(dataAtual.getDate() - 4);
 
     // Formata as datas para o formato do SQLite
     let dataAtualFormatada = dataAtual.toISOString().split('T')[0];
@@ -80,6 +99,29 @@ function somaVendasUltimos30Dias() {
   });
 }
 
+function somaVendasPorMetodoPagamento(metodoPagamento) {
+  return new Promise((resolve, reject) => {
+    let dataAtual = new Date();
+    let data30DiasAtras = new Date();
+
+    // Configura a data para 30 dias atrás
+    data30DiasAtras.setDate(dataAtual.getDate() - 4);
+
+    // Formata as datas para o formato do SQLite
+    let dataAtualFormatada = dataAtual.toISOString().split('T')[0];
+    let data30DiasAtrasFormatada = data30DiasAtras.toISOString().split('T')[0];
+
+    db.serialize(() => {
+      db.get(`SELECT SUM(preco) as totalVendas FROM vendas WHERE metodoPagamento = ? AND dataVenda BETWEEN ? AND ?`, [metodoPagamento, data30DiasAtrasFormatada, dataAtualFormatada], (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(row.totalVendas);
+        }
+      });
+    });
+  });
+}
 
 
 
@@ -92,9 +134,7 @@ db.run(`CREATE TABLE IF NOT EXISTS Pagamentos (
   data_pagamento TEXT
 )`);
 
-
-
-module.exports = { db, insertCliente, insertVenda, updateCliente,somaVendasUltimos30Dias };
+module.exports = { db, insertCliente, insertVenda, updateCliente,somaVendasUltimos30Dias,somaVendasPorMetodoPagamento };
 
 
 

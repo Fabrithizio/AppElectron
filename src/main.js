@@ -1,5 +1,5 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
-const { db, insertCliente, insertVenda, updateCliente, somaVendasUltimos30Dias } = require('./database.js');
+const { db, insertCliente, insertVenda, updateCliente, somaVendasUltimos30Dias,somaVendasPorMetodoPagamento } = require('./database.js');
 const moment = require('moment');
 
 app.on('ready', () => {
@@ -288,10 +288,21 @@ ipcMain.on('submit-venda', (event, data) => {
 });
 
 //responsavel pelo sitema de faturamento
+
 ipcMain.on('getTotalVendas', (event) => {
   somaVendasUltimos30Dias()
     .then(totalVendas => {
       event.reply('getTotalVendasResponse', totalVendas);
+    })
+    .catch(err => {
+      console.error(err);
+    });
+});
+
+ipcMain.on('getTotalVendasPorMetodoPagamento', (event, metodoPagamento) => {
+  somaVendasPorMetodoPagamento(metodoPagamento)
+    .then(totalVendas => {
+      event.reply('getTotalVendasPorMetodoPagamentoResponse', {metodoPagamento, totalVendas});
     })
     .catch(err => {
       console.error(err);

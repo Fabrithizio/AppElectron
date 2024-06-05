@@ -131,8 +131,21 @@ document.addEventListener('DOMContentLoaded', (event) => {
 });
 
 
+
 ipcRenderer.send('getTotalVendas');
 
 ipcRenderer.on('getTotalVendasResponse', (event, totalVendas) => {
   document.getElementById('totalVendas').textContent = `A soma total das vendas dos últimos 30 dias é: ${totalVendas}`;
+});
+
+let metodosPagamento = ['Pix', 'Especie', 'Fiado', 'Debito', 'Credito'];
+
+metodosPagamento.forEach(metodoPagamento => {
+  ipcRenderer.send('getTotalVendasPorMetodoPagamento', metodoPagamento);
+
+  ipcRenderer.on('getTotalVendasPorMetodoPagamentoResponse', (event, data) => {
+    if (data.metodoPagamento === metodoPagamento) {
+      document.getElementById(`totalVendas${metodoPagamento}`).textContent = `A soma total das vendas por ${metodoPagamento} é: ${data.totalVendas}`;
+    }
+  });
 });
