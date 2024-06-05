@@ -55,6 +55,32 @@ function insertVenda({ cliente, metodoPagamento, descricao, preco, dataVenda }) 
   });
 }
 
+// cuida do 
+function somaVendasUltimos30Dias() {
+  return new Promise((resolve, reject) => {
+    let dataAtual = new Date();
+    let data30DiasAtras = new Date();
+
+    // Configura a data para 30 dias atrás
+    data30DiasAtras.setDate(dataAtual.getDate() - 30);
+
+    // Formata as datas para o formato do SQLite
+    let dataAtualFormatada = dataAtual.toISOString().split('T')[0];
+    let data30DiasAtrasFormatada = data30DiasAtras.toISOString().split('T')[0];
+
+    db.serialize(() => {
+      db.get(`SELECT SUM(preco) as totalVendas FROM vendas WHERE dataVenda BETWEEN ? AND ?`, [data30DiasAtrasFormatada, dataAtualFormatada], (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(row.totalVendas);
+        }
+      });
+    });
+  });
+}
+
+
 
 
 db.run(`CREATE TABLE IF NOT EXISTS Pagamentos (
@@ -68,7 +94,7 @@ db.run(`CREATE TABLE IF NOT EXISTS Pagamentos (
 
 
 
-module.exports = { db, insertCliente, insertVenda, updateCliente };
+module.exports = { db, insertCliente, insertVenda, updateCliente,somaVendasUltimos30Dias };
 
 
 

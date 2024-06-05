@@ -1,5 +1,5 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
-const { db, insertCliente, insertVenda, updateCliente } = require('./database.js');
+const { db, insertCliente, insertVenda, updateCliente, somaVendasUltimos30Dias } = require('./database.js');
 const moment = require('moment');
 
 app.on('ready', () => {
@@ -285,6 +285,17 @@ ipcMain.on('update-cliente', (event, data) => {
 // confirmação de envio dos dados para o banco  do sistema de vendas
 ipcMain.on('submit-venda', (event, data) => {
   insertVenda(data);
+});
+
+//responsavel pelo sitema de faturamento
+ipcMain.on('getTotalVendas', (event) => {
+  somaVendasUltimos30Dias()
+    .then(totalVendas => {
+      event.reply('getTotalVendasResponse', totalVendas);
+    })
+    .catch(err => {
+      console.error(err);
+    });
 });
 
 //sistema para lidar com a busca de clientes no banco para a vendas

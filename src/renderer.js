@@ -131,3 +131,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
 });
 
 
+ipcRenderer.send('getTotalVendas');
+
+ipcRenderer.on('getTotalVendasResponse', (event, totalVendas) => {
+  document.getElementById('totalVendas').textContent = `A soma total das vendas dos últimos 30 dias é: ${totalVendas}`;
+});
