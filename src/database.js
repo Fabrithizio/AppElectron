@@ -81,7 +81,7 @@ function somaVendasUltimos30Dias() {
     let data30DiasAtras = new Date();
 
     // Configura a data para 30 dias atrás
-    data30DiasAtras.setDate(dataAtual.getDate() - 4);
+    data30DiasAtras.setDate(dataAtual.getDate() - 5);
 
     // Formata as datas para o formato do SQLite
     let dataAtualFormatada = dataAtual.toISOString().split('T')[0];
@@ -105,7 +105,7 @@ function somaVendasPorMetodoPagamento(metodoPagamento) {
     let data30DiasAtras = new Date();
 
     // Configura a data para 30 dias atrás
-    data30DiasAtras.setDate(dataAtual.getDate() - 4);
+    data30DiasAtras.setDate(dataAtual.getDate() - 5);
 
     // Formata as datas para o formato do SQLite
     let dataAtualFormatada = dataAtual.toISOString().split('T')[0];
