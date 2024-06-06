@@ -366,7 +366,7 @@ ipcMain.on('get-activities-by-client', (event, clientName) => {
 function createWindow() {
   const win = new BrowserWindow({
     width: 880,
-    height: 700,
+    height: 800,
     webPreferences: {
       nodeIntegration: true, // Habilita o 'require' no processo de renderização
       contextIsolation: false // Desabilita o isolamento de contexto

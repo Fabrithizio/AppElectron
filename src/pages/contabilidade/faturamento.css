@@ -1,0 +1,59 @@
+.balao {
+  width: 200px;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #28a745;
+  border-radius: 15px; /* bordas mais suaves */
+  color: rgb(0, 0, 0); /* texto branco para contraste */
+}
+
+.balao.pix {
+  background-color: #20c997; /* cor para Pix */
+}
+
+.balao.especie {
+  background-color: #17a2b8; /* cor para Especie */
+}
+
+.balao.fiado {
+  background-color: #ffc107; /* cor para Fiado */
+}
+
+.balao.debito {
+  background-color: #dc3545; /* cor para Debito */
+}
+
+.balao.credito {
+  background-color: #28a745; /* cor para Credito */
+}
+
+.balao.total {
+  background-color: #6c757d; /* cor para Total */
+}
+
+.valor {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.porcentagem {
+  font-size: 14px;
+}
+
+header {
+  height: 70px;
+  width: 100%; /* Ajuste para 100% para que o cabeçalho ocupe toda a largura */
+  display: flex;
+  justify-content: center; /* Alinha os itens horizontalmente ao centro */
+  align-items: center; /* Alinha os itens verticalmente ao centro */
+  margin-bottom: 20px;
+}
+header h1{
+  font-size: 28pt;
+}
+.voltar {
+  position: absolute;
+  left: 6px;
+  top: 4%;
+  transform: translateY(-50%);
+}
