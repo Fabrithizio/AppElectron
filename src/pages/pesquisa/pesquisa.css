@@ -6,6 +6,28 @@
 body{
     background: linear-gradient(to top, rgba(221, 214, 214, 0.986),rgba(65, 64, 64, 0.699) );
 }
+#historico-div {
+    background-color: #f8f9fa; /* Cor de fundo */
+    border: 1px solid #ced4da; /* Borda */
+    border-radius: 5px; /* Bordas arredondadas */
+    padding: 20px; /* Espaçamento interno */
+    width: 80%; /* Largura */
+    max-width: 600px; /* Largura máxima */
+    margin: 0 auto; /* Centraliza a div na tela */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15); /* Sombra */
+    overflow: auto; /* Barra de rolagem se o conteúdo for muito grande */
+    position: fixed; /* Fixa a div no meio da tela */
+    top: 50%; /* Posiciona no meio verticalmente */
+    left: 50%; /* Posiciona no meio horizontalmente */
+    transform: translate(-50%, -50%); /* Ajusta a posição para que a div esteja centralizada */
+    z-index: 9999; /* Garante que a div esteja acima de outros elementos */
+}
+
+#historico-div div {
+    margin-bottom: 10px; /* Espaçamento entre os resultados */
+}
+
+
 .container{
     display: flex;
 }

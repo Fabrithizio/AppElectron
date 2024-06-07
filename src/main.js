@@ -2,6 +2,32 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const { db, insertCliente, insertVenda, updateCliente, somaVendas,somaVendasPorMetodoPagamento } = require('./database.js');
 const moment = require('moment');
 
+
+ipcMain.on('historico-vendas', (event, searchTerm) => {
+  db.all('SELECT * FROM vendas WHERE cliente = ?', [searchTerm], function (err, rows) {
+      if (err) {
+          console.error(err);
+          return;
+      }
+      event.sender.send('historico-vendas-results', rows);
+  });
+});
+
+ipcMain.on('historico-pagamentos', (event, searchTerm) => {
+  db.all('SELECT * FROM pagamentos WHERE nome_pagador = ?', [searchTerm], function (err, rows) {
+      if (err) {
+          console.error(err);
+          return;
+      }
+      event.sender.send('historico-pagamentos-results', rows);
+  });
+});
+
+
+
+
+
+
 app.on('ready', () => {
   let dataAtual = new Date();
   let dia = ("0" + dataAtual.getDate()).slice(-2); // Adiciona um zero à esquerda se o dia for menor que 10

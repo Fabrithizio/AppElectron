@@ -1,6 +1,44 @@
 // Importa o módulo ipcRenderer do Electron
 const { ipcRenderer } = require('electron');
 
+function historico() {
+  // Obtém o termo de pesquisa do campo de entrada
+  var searchTerm = document.getElementById('search').value;
+  // Envia o termo de pesquisa para o processo principal para obter o histórico de vendas e pagamentos do cliente
+  ipcRenderer.send('historico-vendas', searchTerm);
+  ipcRenderer.send('historico-pagamentos', searchTerm);
+}
+
+
+ipcRenderer.on('historico-vendas-results', (event, rows) => {
+  var results = document.getElementById('historico-div');
+  results.innerHTML = '';
+
+  for (var i = 0; i < rows.length; i++) {
+      var result = document.createElement('div');
+      result.textContent = 'Venda: ' + rows[i].descricao + ', Preço: ' + rows[i].preco;
+      results.appendChild(result);
+  }
+
+  // Torna a div visível
+  results.style.display = 'block';
+});
+
+ipcRenderer.on('historico-pagamentos-results', (event, rows) => {
+  var results = document.getElementById('historico-div');
+  // Não limpa os resultados existentes, pois queremos adicionar aos resultados de vendas
+
+  for (var i = 0; i < rows.length; i++) {
+      var result = document.createElement('div');
+      result.textContent = 'Pagamento: ' + rows[i].valor_pago;
+      results.appendChild(result);
+  }
+
+  // Torna a div visível
+  results.style.display = 'block';
+});
+
+
 
 // Função para lidar com a funcionalidade de auto-completar
 function autocomplete() {
