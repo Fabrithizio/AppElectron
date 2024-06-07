@@ -7,17 +7,25 @@
 </head>
 <body>
 <header> 
-  <a href="../../index.html"><img src="../../imgs/voltar.png" alt="voltar" width="65px" class="voltar"></a>
+  <a href="../../index.html"><img src="../../imgs/voltar.png" alt="voltar" width="55px" class="voltar"></a>
   <h1>Finanças</h1>
 </header>
 
-<label for="dataInicio">Data de Início:</label>
-<input type="date" id="dataInicio" name="dataInicio">
+<div class="filtro">
+  
+     <label class="filtorData" for="dataInicio"><strong>Início:</strong></label>
+     <input class="filtorData" type="date" id="dataInicio" name="dataInicio">
+ 
+ 
 
-<label for="dataFim">Data de Fim:</label>
-<input type="date" id="dataFim" name="dataFim">
+ 
+    <label class="filtorData" for="dataFim"><strong>Fim:</strong></label>
+    <input class="filtorData" type="date" id="dataFim" name="dataFim">
+    <button  onclick="buscarDados()" class="buscar">Buscar</button>
 
-<button onclick="buscarDados()">Buscar</button>
+
+</div>
+
 
 <div id="baloes"></div>
   

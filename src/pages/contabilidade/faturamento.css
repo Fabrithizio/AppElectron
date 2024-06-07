@@ -1,3 +1,8 @@
+*{
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+}
 .balao {
   width: 200px;
   padding: 10px;
@@ -5,6 +10,9 @@
   border: 1px solid #28a745;
   border-radius: 15px; /* bordas mais suaves */
   color: rgb(0, 0, 0); /* texto branco para contraste */
+}
+body{
+  background-color: #adadad;
 }
 
 .balao.pix {
@@ -53,7 +61,33 @@ header h1{
 }
 .voltar {
   position: absolute;
-  left: 6px;
-  top: 4%;
+  left: 12px;
+  top: 8%;
   transform: translateY(-50%);
+}
+.filtro{
+ display: flex;
+  justify-content: center;
+  align-items: center;
+  
+}
+.filtorData{
+  font-size: 13pt;
+  display: flex;
+  margin-right: 15px;
+  text-align: center;
+}
+
+.buscar{
+ 
+  font-size: 13pt;
+  width: 75px;
+  cursor: pointer;
+  height: 30px;
+ 
+
+}
+.buscar:hover{
+  background-color: #6c757d;
+
 }
