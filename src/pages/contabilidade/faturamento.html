@@ -6,9 +6,21 @@
   <link rel="stylesheet" href="faturamento.css">
 </head>
 <body>
-<header> <a href="../../index.html"><img src="../../imgs/voltar.png" alt="voltar" width="65px" class="voltar"></a><h1>Finanças</h1></header>
-  <div id="baloes"></div>
+<header> 
+  <a href="../../index.html"><img src="../../imgs/voltar.png" alt="voltar" width="65px" class="voltar"></a>
+  <h1>Finanças</h1>
+</header>
+
+<label for="dataInicio">Data de Início:</label>
+<input type="date" id="dataInicio" name="dataInicio">
+
+<label for="dataFim">Data de Fim:</label>
+<input type="date" id="dataFim" name="dataFim">
+
+<button onclick="buscarDados()">Buscar</button>
+
+<div id="baloes"></div>
   
-  <script src="faturamento.js"></script>
+<script src="faturamento.js"></script>
 </body>
 </html>

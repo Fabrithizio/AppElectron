@@ -74,21 +74,14 @@ db.serialize(() => {
   });
 });
 
-
-function somaVendasUltimos30Dias() {
+function somaVendas(intervaloInicio, intervaloFim) {
   return new Promise((resolve, reject) => {
-    let dataAtual = new Date();
-    let data30DiasAtras = new Date();
-
-    // Configura a data para 30 dias atrás
-    data30DiasAtras.setDate(dataAtual.getDate() - 30);
-
     // Formata as datas para o formato do SQLite
-    let dataAtualFormatada = dataAtual.toISOString().split('T')[0];
-    let data30DiasAtrasFormatada = data30DiasAtras.toISOString().split('T')[0];
+    let dataInicioFormatada = intervaloInicio.toISOString().split('T')[0];
+    let dataFimFormatada = intervaloFim.toISOString().split('T')[0];
 
     db.serialize(() => {
-      db.get(`SELECT SUM(preco) as totalVendas FROM vendas WHERE dataVenda BETWEEN ? AND ?`, [data30DiasAtrasFormatada, dataAtualFormatada], (err, row) => {
+      db.get(`SELECT SUM(preco) as totalVendas FROM vendas WHERE dataVenda BETWEEN ? AND ?`, [dataInicioFormatada, dataFimFormatada], (err, row) => {
         if (err) {
           reject(err);
         } else {
@@ -99,20 +92,14 @@ function somaVendasUltimos30Dias() {
   });
 }
 
-function somaVendasPorMetodoPagamento(metodoPagamento) {
+function somaVendasPorMetodoPagamento(metodoPagamento, intervaloInicio, intervaloFim) {
   return new Promise((resolve, reject) => {
-    let dataAtual = new Date();
-    let data30DiasAtras = new Date();
-
-    // Configura a data para 30 dias atrás
-    data30DiasAtras.setDate(dataAtual.getDate() - 30);
-
     // Formata as datas para o formato do SQLite
-    let dataAtualFormatada = dataAtual.toISOString().split('T')[0];
-    let data30DiasAtrasFormatada = data30DiasAtras.toISOString().split('T')[0];
+    let dataInicioFormatada = intervaloInicio.toISOString().split('T')[0];
+    let dataFimFormatada = intervaloFim.toISOString().split('T')[0];
 
     db.serialize(() => {
-      db.get(`SELECT SUM(preco) as totalVendas FROM vendas WHERE metodoPagamento = ? AND dataVenda BETWEEN ? AND ?`, [metodoPagamento, data30DiasAtrasFormatada, dataAtualFormatada], (err, row) => {
+      db.get(`SELECT SUM(preco) as totalVendas FROM vendas WHERE metodoPagamento = ? AND dataVenda BETWEEN ? AND ?`, [metodoPagamento, dataInicioFormatada, dataFimFormatada], (err, row) => {
         if (err) {
           reject(err);
         } else {
@@ -134,7 +121,7 @@ db.run(`CREATE TABLE IF NOT EXISTS Pagamentos (
   data_pagamento TEXT
 )`);
 
-module.exports = { db, insertCliente, insertVenda, updateCliente,somaVendasUltimos30Dias,somaVendasPorMetodoPagamento };
+module.exports = { db, insertCliente, insertVenda, updateCliente,somaVendas,somaVendasPorMetodoPagamento };
 
 
 

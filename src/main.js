@@ -1,5 +1,5 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
-const { db, insertCliente, insertVenda, updateCliente, somaVendasUltimos30Dias,somaVendasPorMetodoPagamento } = require('./database.js');
+const { db, insertCliente, insertVenda, updateCliente, somaVendas,somaVendasPorMetodoPagamento } = require('./database.js');
 const moment = require('moment');
 
 app.on('ready', () => {
@@ -287,10 +287,8 @@ ipcMain.on('submit-venda', (event, data) => {
   insertVenda(data);
 });
 
-//responsavel pelo sitema de faturamento
-
-ipcMain.on('getTotalVendas', (event) => {
-  somaVendasUltimos30Dias()
+ipcMain.on('getTotalVendas', (event, dataInicio, dataFim) => {
+  somaVendas(new Date(dataInicio), new Date(dataFim))
     .then(totalVendas => {
       event.reply('getTotalVendasResponse', totalVendas);
     })
@@ -299,8 +297,8 @@ ipcMain.on('getTotalVendas', (event) => {
     });
 });
 
-ipcMain.on('getTotalVendasPorMetodoPagamento', (event, metodoPagamento) => {
-  somaVendasPorMetodoPagamento(metodoPagamento)
+ipcMain.on('getTotalVendasPorMetodoPagamento', (event, metodoPagamento, dataInicio, dataFim) => {
+  somaVendasPorMetodoPagamento(metodoPagamento, new Date(dataInicio), new Date(dataFim))
     .then(totalVendas => {
       event.reply('getTotalVendasPorMetodoPagamentoResponse', {metodoPagamento, totalVendas});
     })
@@ -308,6 +306,8 @@ ipcMain.on('getTotalVendasPorMetodoPagamento', (event, metodoPagamento) => {
       console.error(err);
     });
 });
+
+
 
 //sistema para lidar com a busca de clientes no banco para a vendas
 ipcMain.on('search', (event, searchTerm) => {
