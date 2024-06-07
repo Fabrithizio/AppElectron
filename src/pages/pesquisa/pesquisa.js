@@ -13,17 +13,23 @@ ipcRenderer.on('historico-vendas-results', (event, rows) => {
   var results = document.getElementById('historico-div');
   results.innerHTML = '';
 
+  // Cria uma nova div para os resultados de vendas
+  var vendasDiv = document.createElement('div');
+
   // Cria um novo elemento de título e adiciona ao início dos resultados de vendas
   var tituloVendas = document.createElement('h2');
   tituloVendas.textContent = 'Compras do Cliente';
-  results.appendChild(tituloVendas);
+  vendasDiv.appendChild(tituloVendas);
 
   for (var i = 0; i < rows.length; i++) {
     var result = document.createElement('div');
     result.textContent = 'Venda: ' + rows[i].descricao + ', Preço: ' + rows[i].preco;
     // Adiciona o novo resultado no início da div
-    results.insertBefore(result, results.firstChild);
+    vendasDiv.insertBefore(result, vendasDiv.firstChild);
   }
+
+  // Adiciona a div de vendas à div de resultados
+  results.appendChild(vendasDiv);
 
   // Torna a div visível
   results.style.display = 'block';
@@ -32,22 +38,27 @@ ipcRenderer.on('historico-vendas-results', (event, rows) => {
 ipcRenderer.on('historico-pagamentos-results', (event, rows) => {
   var results = document.getElementById('historico-div');
 
+  // Cria uma nova div para os resultados de pagamentos
+  var pagamentosDiv = document.createElement('div');
+
   // Cria um novo elemento de título e adiciona ao início dos resultados de pagamentos
   var tituloPagamentos = document.createElement('h2');
   tituloPagamentos.textContent = 'Pagamentos Feitos pelo Cliente';
-  results.appendChild(tituloPagamentos);
+  pagamentosDiv.appendChild(tituloPagamentos);
 
   for (var i = 0; i < rows.length; i++) {
     var result = document.createElement('div');
     result.textContent = 'Pagamento: ' + rows[i].valor_pago + ', Dívida Anterior: ' + rows[i].divida_anterior + ', Dívida Restante: ' + rows[i].divida_restante + ', Data de Pagamento: ' + rows[i].data_pagamento;
     // Adiciona o novo resultado no início da div
-    results.insertBefore(result, results.firstChild);
+    pagamentosDiv.insertBefore(result, pagamentosDiv.firstChild);
   }
+
+  // Adiciona a div de pagamentos à div de resultados
+  results.appendChild(pagamentosDiv);
 
   // Torna a div visível
   results.style.display = 'block';
 });
-
 
 
 // Função para lidar com a funcionalidade de auto-completar
