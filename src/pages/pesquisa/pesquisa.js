@@ -9,15 +9,20 @@ function historico() {
   ipcRenderer.send('historico-pagamentos', searchTerm);
 }
 
-
 ipcRenderer.on('historico-vendas-results', (event, rows) => {
   var results = document.getElementById('historico-div');
   results.innerHTML = '';
 
+  // Cria um novo elemento de título e adiciona ao início dos resultados de vendas
+  var tituloVendas = document.createElement('h2');
+  tituloVendas.textContent = 'Compras do Cliente';
+  results.appendChild(tituloVendas);
+
   for (var i = 0; i < rows.length; i++) {
-      var result = document.createElement('div');
-      result.textContent = 'Venda: ' + rows[i].descricao + ', Preço: ' + rows[i].preco;
-      results.appendChild(result);
+    var result = document.createElement('div');
+    result.textContent = 'Venda: ' + rows[i].descricao + ', Preço: ' + rows[i].preco;
+    // Adiciona o novo resultado no início da div
+    results.insertBefore(result, results.firstChild);
   }
 
   // Torna a div visível
@@ -26,12 +31,17 @@ ipcRenderer.on('historico-vendas-results', (event, rows) => {
 
 ipcRenderer.on('historico-pagamentos-results', (event, rows) => {
   var results = document.getElementById('historico-div');
-  // Não limpa os resultados existentes, pois queremos adicionar aos resultados de vendas
+
+  // Cria um novo elemento de título e adiciona ao início dos resultados de pagamentos
+  var tituloPagamentos = document.createElement('h2');
+  tituloPagamentos.textContent = 'Pagamentos Feitos pelo Cliente';
+  results.appendChild(tituloPagamentos);
 
   for (var i = 0; i < rows.length; i++) {
-      var result = document.createElement('div');
-      result.textContent = 'Pagamento: ' + rows[i].valor_pago;
-      results.appendChild(result);
+    var result = document.createElement('div');
+    result.textContent = 'Pagamento: ' + rows[i].valor_pago + ', Dívida Anterior: ' + rows[i].divida_anterior + ', Dívida Restante: ' + rows[i].divida_restante + ', Data de Pagamento: ' + rows[i].data_pagamento;
+    // Adiciona o novo resultado no início da div
+    results.insertBefore(result, results.firstChild);
   }
 
   // Torna a div visível
