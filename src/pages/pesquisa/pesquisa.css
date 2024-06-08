@@ -9,7 +9,7 @@ body{
 #historico-div {
     background-color: #f8f9fa; /* Cor de fundo */
     border: 1px solid #ced4da; /* Borda */
-    border-radius: 5px; /* Bordas arredondadas */
+    border-radius: 8px; /* Bordas arredondadas */
     padding: 20px; /* Espaçamento interno */
     width: 80%; /* Largura */
     max-width: 600px; /* Largura máxima */
@@ -22,13 +22,29 @@ body{
     transform: translate(-50%, -50%); /* Ajusta a posição para que a div esteja centralizada */
     z-index: 9999; /* Garante que a div esteja acima de outros elementos */
 }
-
+#historico{
+    margin-left: 40px;
+    width: 80%;
+    cursor: pointer;
+    margin-top: 6px;
+    justify-content: center;
+    font-size: 13pt;
+}
+#historico:hover{
+    background-color: #888;
+}
 #historico-div div {
-    margin-bottom: 10px; /* Espaçamento entre os resultados */
-   
+    margin-bottom: 15px; /* Espaçamento entre os resultados */
+    border-bottom: solid 1px black;
+    color: #6512eb;
 }
 
-
+#historico-div h2{
+    text-align: center;
+    margin-bottom: 6px;
+    border: solid 1px black;
+    border-radius: 5px;
+}
 .container{
     display: flex;
 }

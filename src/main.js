@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const { db, insertCliente, insertVenda, updateCliente, somaVendas,somaVendasPorMetodoPagamento } = require('./database.js');
 const moment = require('moment');
 
-
+// sistema pesquisar historico do sitema de pesquisa 
 ipcMain.on('historico-vendas', (event, searchTerm) => {
   db.all('SELECT * FROM vendas WHERE cliente = ?', [searchTerm], function (err, rows) {
       if (err) {
@@ -12,7 +12,7 @@ ipcMain.on('historico-vendas', (event, searchTerm) => {
       event.sender.send('historico-vendas-results', rows);
   });
 });
-
+//sistems para pesquisar pagamentso do sitema de pesquisa 
 ipcMain.on('historico-pagamentos', (event, searchTerm) => {
   db.all('SELECT * FROM pagamentos WHERE nome_pagador = ?', [searchTerm], function (err, rows) {
       if (err) {

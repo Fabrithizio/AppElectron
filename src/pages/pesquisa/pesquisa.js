@@ -48,7 +48,7 @@ ipcRenderer.on('historico-pagamentos-results', (event, rows) => {
 
   for (var i = rows.length - 1; i >= 0; i--) {
     var result = document.createElement('div');
-    result.textContent = 'Pagamento: ' + rows[i].valor_pago + ', Dívida Anterior: ' + rows[i].divida_anterior + ', Dívida Restante: ' + rows[i].divida_restante + ', Data de Pagamento: ' + rows[i].data_pagamento;
+    result.textContent = 'Pagamento: ' + rows[i].valor_pago +'R$'+', Dívida Anterior: ' + rows[i].divida_anterior + ', Dívida Restante: ' + rows[i].divida_restante + ', Data de Pagamento: ' + rows[i].data_pagamento;
     // Adiciona o novo resultado após o título
     results.appendChild(result);
   }
