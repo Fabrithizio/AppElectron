@@ -18,11 +18,15 @@ main{
     border-radius: 12px;
 }
 h1{
-    margin-top: 6px;
+    margin-top: 8px;
     font-size: 20pt;
     text-align: center;
     
    
+}
+.labelDatas{
+  font-size: 12pt;
+  margin-top: 4px;
 }
 .ContainerUpdade{
   display: flex;
@@ -31,7 +35,7 @@ h1{
   width: 50%;
   margin-left: 22px;
   margin-right: 5px;
-  
+  font-size: 12pt;
   
 }
 #updateButton{

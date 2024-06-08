@@ -10,11 +10,11 @@
 
   <main> 
 
-  <h1>Clientes Banco</h1>
+  <h1>Cadastros e Atualizaçoes</h1>
 
   <div class="ContainerUpdade">
    
-    <input type="text" id="search" placeholder="Buscar Cliente">
+    <input type="text" id="search" placeholder="Buscar Cliente Cadastrado">
     <button id="updateButton" type="button">Atualizar Dados</button>
   </div>
   <div class="DivResult">
@@ -24,18 +24,18 @@
 
   </div>
 
-
-    <h1>Cadastra Cliente</h1>
  <form method="post" class="clientes">
   <input type="text" name="nome" id="nome" placeholder="Nome" required>
-  <input type="date" name="dataNascimento" id="dataNascimento">
+  <label for="dataNascimento" class="labelDatas"><strong>Data De Nascimento</strong></label>
+  <input type="date" name="dataNascimento" id="dataNascimento" required>
   <input type="text" name="cpf" id="cpf"  placeholder="CPF" maxlength="14">
   <input type="text" name="rg" id="rg"  placeholder="RG" maxlength="12">
   <input type="text" name="endereco" id="endereco" placeholder="Endereço">
   <input type="text" name="telefone" id="telefone"  placeholder="Telefone" required maxlength="15">
   <input type="email" name="email" id="email"  placeholder="E-mail">
   <input type="text" name="divida" id="divida" placeholder="Dívida Atual">
-  <input type="date" name="dataPagamento" id="dataPagamento" placeholder="Data de Pagamento" required>
+  <label for="dataPagamento" class="labelDatas"><strong>Data de Pagamento</strong></label>
+  <input type="date" name="dataPagamento" id="dataPagamento" required>
 
 
   <button type="submit" >Cadastra Cliente</button>
