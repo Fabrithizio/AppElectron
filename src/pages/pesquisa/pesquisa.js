@@ -18,25 +18,49 @@ ipcRenderer.on('historico-vendas-results', (event, rows) => {
   tituloVendas.textContent = 'Compras do Cliente';
   results.appendChild(tituloVendas);
 
-  for (var i = rows.length - 1; i >= 0; i--) {
-    var result = document.createElement('div');
-    result.textContent = 'Venda: ' + rows[i].descricao + ', Preço: ' + rows[i].preco;
-    // Adiciona o novo resultado após o título
-    results.appendChild(result);
-  }
+  // Cria a tabela e o cabeçalho
+  var table = document.createElement('table');
+  var header = table.createTHead();
+  var row = header.insertRow(0);
+  var cell1 = row.insertCell(0);
+  var cell2 = row.insertCell(1);
+  var cell3 = row.insertCell(2);
+  cell1.innerHTML = "<b>Descrição da Venda</b>";
+  cell2.innerHTML = "<b>Preço</b>";
+  cell3.innerHTML = "<b>Data da Compra</b>"; 
+
+ // Adiciona os dados à tabela
+for (var i = rows.length - 1; i >= 0; i--) {
+  var row = table.insertRow(-1);
+  var cell1 = row.insertCell(0);
+  var cell2 = row.insertCell(1);
+  var cell3 = row.insertCell(2);
+  cell1.textContent = rows[i].descricao;
+  cell2.textContent = 'R$ ' + rows[i].preco.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+  var dataCompra = new Date(rows[i].dataVenda); // Usa dataVenda em vez de data_compra
+  var dia = dataCompra.getUTCDate(); // Usa getUTCDate em vez de getDate
+  var mes = dataCompra.getUTCMonth() + 1; // Usa getUTCMonth em vez de getMonth
+  var ano = dataCompra.getUTCFullYear(); // Usa getUTCFullYear em vez de getFullYear
+  cell3.textContent = dia + '/' + mes + '/' + ano; // Adiciona a data da compra
+}
+
+
+  // Adiciona a tabela aos resultados
+  results.appendChild(table);
 
   // Torna a div visível
   results.style.display = 'block';
 });
 
-
-document.body.addEventListener('click', function(event) {
+document.addEventListener('click', function(event) {
   var historicoDiv = document.getElementById('historico-div');
-  if (event.target.id !== 'historico-div' && !historicoDiv.contains(event.target)) {
-      historicoDiv.style.display = 'none';
+  var isClickInside = historicoDiv.contains(event.target);
+
+  if (!isClickInside) {
+    // O usuário clicou fora da div, esconde a div
+    historicoDiv.style.display = 'none';
   }
 });
-
 
 ipcRenderer.on('historico-pagamentos-results', (event, rows) => {
   var results = document.getElementById('historico-div');
@@ -46,12 +70,42 @@ ipcRenderer.on('historico-pagamentos-results', (event, rows) => {
   tituloPagamentos.textContent = 'Pagamentos Feitos pelo Cliente';
   results.appendChild(tituloPagamentos);
 
+  // Cria a tabela e o cabeçalho
+  var table = document.createElement('table');
+  var header = table.createTHead();
+  var row = header.insertRow(0);
+  var cell1 = row.insertCell(0);
+  var cell2 = row.insertCell(1);
+  var cell3 = row.insertCell(2);
+  var cell4 = row.insertCell(3);
+  var cell5 = row.insertCell(4); // Adiciona a coluna para a descrição do pagamento
+  cell1.innerHTML = "<b>Valor Pago</b>";
+  cell2.innerHTML = "<b>Dívida Anterior</b>";
+  cell3.innerHTML = "<b>Dívida Restante</b>";
+  cell4.innerHTML = "<b>Data de Pagamento</b>";
+  cell5.innerHTML = "<b>Descrição</b>"; 
+
+  // Adiciona os dados à tabela
   for (var i = rows.length - 1; i >= 0; i--) {
-    var result = document.createElement('div');
-    result.textContent = 'Pagamento: ' + rows[i].valor_pago +'R$'+', Dívida Anterior: ' + rows[i].divida_anterior + ', Dívida Restante: ' + rows[i].divida_restante + ', Data de Pagamento: ' + rows[i].data_pagamento;
-    // Adiciona o novo resultado após o título
-    results.appendChild(result);
+      var row = table.insertRow(-1);
+      var cell1 = row.insertCell(0);
+      var cell2 = row.insertCell(1);
+      var cell3 = row.insertCell(2);
+      var cell4 = row.insertCell(3);
+      var cell5 = row.insertCell(4); // Adiciona a célula para a descrição do pagamento
+      cell1.textContent = 'R$ ' + rows[i].valor_pago.toLocaleString('pt-BR', {minimumFractionDigits: 2}); // Formata o valor pago
+      cell2.textContent = 'R$ ' + rows[i].divida_anterior.toLocaleString('pt-BR', {minimumFractionDigits: 2}); // Formata a dívida anterior
+      cell3.textContent = 'R$ ' + rows[i].divida_restante.toLocaleString('pt-BR', {minimumFractionDigits: 2}); // Formata a dívida restante
+      var dataPagamento = new Date(rows[i].data_pagamento);
+      var dia = dataPagamento.getUTCDate();
+      var mes = dataPagamento.getUTCMonth() + 1;
+      var ano = dataPagamento.getUTCFullYear();
+      cell4.textContent = dia + '/' + mes + '/' + ano;
+
   }
+
+  // Adiciona a tabela aos resultados
+  results.appendChild(table);
 
   // Torna a div visível
   results.style.display = 'block';

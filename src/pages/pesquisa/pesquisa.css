@@ -21,7 +21,24 @@ body{
     left: 50%; /* Posiciona no meio horizontalmente */
     transform: translate(-50%, -50%); /* Ajusta a posição para que a div esteja centralizada */
     z-index: 9999; /* Garante que a div esteja acima de outros elementos */
+    overflow: auto; /* Adiciona uma barra de rolagem se o conteúdo for muito grande */
+    max-height: 500px; /* Define uma altura máxima para a div */
 }
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table, th, td {
+    border: 1px solid black;
+    padding: 15px;
+    text-align: left;
+}
+
+tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
 #historico{
     margin-left: 40px;
     width: 80%;
