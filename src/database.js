@@ -55,24 +55,6 @@ function insertVenda({ cliente, metodoPagamento, descricao, preco, dataVenda }) 
   });
 }
 
-// excluir apos modificar os dados do banco
-db.serialize(() => {
-  db.run(`UPDATE vendas SET metodoPagamento = 'Credito' WHERE metodoPagamento = 'Cartao de Credito'`, (err) => {
-    if (err) {
-      console.error(err);
-    } else {
-      console.log('Método de pagamento atualizado de Cartao de Credito para Credito.');
-    }
-  });
-
-  db.run(`UPDATE vendas SET metodoPagamento = 'Debito' WHERE metodoPagamento = 'Cartao de Debito'`, (err) => {
-    if (err) {
-      console.error(err);
-    } else {
-      console.log('Método de pagamento atualizado de Cartao de Debito para Debito.');
-    }
-  });
-});
 
 function somaVendas(intervaloInicio, intervaloFim) {
   return new Promise((resolve, reject) => {

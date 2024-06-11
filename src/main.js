@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const { db, insertCliente, insertVenda, updateCliente, somaVendas,somaVendasPorMetodoPagamento } = require('./database.js');
 const moment = require('moment');
 
+
 // sistema pesquisar historico do sitema de pesquisa 
 ipcMain.on('historico-vendas', (event, searchTerm) => {
   db.all('SELECT * FROM vendas WHERE cliente = ?', [searchTerm], function (err, rows) {
