@@ -34,6 +34,28 @@ tr:nth-child(even) {
 }
 
 
+#totalPagamentos{
+  font-weight: bold;
+  margin-top: 3px;
+  margin-right: 3px;
+  color: #000000;
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 10px; /* Ajuste conforme necessário */
+  background-color: #f0f0f0; /* Cor de fundo da div */
+  width: 80px;
+  height: 40px;
+  border: solid 1px;
+}
+
+
+#filtrarPorData{
+  cursor: pointer;
+}
+#filtrarPorDataPagamentos{
+  cursor: pointer;
+}
 
 .container-historico{
   border: solid 1px;

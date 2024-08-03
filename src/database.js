@@ -37,7 +37,7 @@ function updateCliente({ id, nome, DataNascimento, cpf, rg, endereco, telefone, 
   );
 }
 
-//função que coida do sistema de vendas e banco de dados
+//função que cuida do sistema de vendas e banco de dados
 
 function insertVenda({ cliente, metodoPagamento, descricao, preco, dataVenda }) {
   db.serialize(() => {

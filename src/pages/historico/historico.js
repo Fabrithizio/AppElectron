@@ -132,6 +132,35 @@ botaoFiltrarPagamentos.addEventListener('click', () => {
 
 });
 
+
+
+
+
+const botaoFiltrarPagamentos = document.getElementById('filtrarPorDataPagamentos');
+const divTotalPagamentos = document.getElementById('totalPagamentos');
+
+botaoFiltrarPagamentos.addEventListener('click', () => {
+  const dataSelecionada = new Date(document.getElementById('filtroDataPagamentos').value).toISOString().split('T')[0];
+  ipcRenderer.send('filtrar-pagamentos-por-data', dataSelecionada);
+});
+
+// Dentro do evento 'resultado-filtro-data-pagamentos'
+ipcRenderer.on('resultado-filtro-data-pagamentos', (event, dadosPagamentosFiltrados) => {
+  // Calcula a soma dos valores pagos
+  const totalPagamentos = dadosPagamentosFiltrados.reduce((total, pagamento) => total + pagamento.valor_pago, 0);
+  
+  // Formata o total com separador de milhares
+  const totalFormatado = totalPagamentos.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  
+  // Exibe o total na div
+  divTotalPagamentos.textContent = `Total: R$ ${totalFormatado}`;
+});
+
+
+
+
+
+
 document.addEventListener('DOMContentLoaded', (event) => {
   // Esconde os elementos específicos inicialmente
   const tabelaHistorico = document.getElementById('tabela-historico');
