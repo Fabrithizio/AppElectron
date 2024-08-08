@@ -309,6 +309,35 @@ ipcMain.on('update-cliente', (event, data) => {
 });
 
 
+ipcMain.on('filtrar-pagamentos-por-intervalo', (event, { dataInicio, dataFim }) => {
+  buscarPagamentosPorIntervalo(dataInicio, dataFim)
+    .then(pagamentosFiltrados => {
+      event.sender.send('resultado-filtro-intervalo-pagamentos', pagamentosFiltrados);
+    })
+    .catch(err => {
+      console.error(err);
+    });
+});
+
+function buscarPagamentosPorIntervalo(dataInicio, dataFim) {
+  return new Promise((resolve, reject) => {
+    const query = `
+      SELECT * FROM Pagamentos
+      WHERE data_pagamento BETWEEN ? AND ?
+    `;
+    db.all(query, [dataInicio, dataFim], (err, rows) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(rows);
+      }
+    });
+  });
+}
+
+
+
+
 // confirmação de envio dos dados para o banco  do sistema de vendas
 ipcMain.on('submit-venda', (event, data) => {
   insertVenda(data);

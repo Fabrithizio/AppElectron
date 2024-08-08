@@ -66,3 +66,20 @@ function exibirBaloes() {
     `;
   }
 }
+
+
+
+const botaoBuscar = document.querySelector('.buscar');
+const divTotalIntervaloPagamentos = document.getElementById('totalIntervaloPagamentos');
+
+botaoBuscar.addEventListener('click', () => {
+  const dataInicio = new Date(document.getElementById('dataInicio').value).toISOString().split('T')[0];
+  const dataFim = new Date(document.getElementById('dataFim').value).toISOString().split('T')[0];
+  ipcRenderer.send('filtrar-pagamentos-por-intervalo', { dataInicio, dataFim });
+});
+
+ipcRenderer.on('resultado-filtro-intervalo-pagamentos', (event, dadosPagamentosFiltrados) => {
+  const totalPagamentos = dadosPagamentosFiltrados.reduce((total, pagamento) => total + pagamento.valor_pago, 0);
+  const totalFormatado = totalPagamentos.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  divTotalIntervaloPagamentos.textContent = `Total no intervalo: R$ ${totalFormatado}`;
+});
