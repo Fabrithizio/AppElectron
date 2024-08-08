@@ -3,10 +3,10 @@ const { ipcRenderer } = require('electron');
 let metodosPagamento = ['Pix', 'Especie', 'Fiado', 'Debito', 'Credito'];
 let vendas = [];
 let totalVendas;
-let dataInicio, dataFim; // Defina as variáveis aqui
+let dataInicio, dataFim;
 
 ipcRenderer.on('getTotalVendasPorMetodoPagamentoResponse', (event, data) => {
-  vendas.push({metodo: data.metodoPagamento, valor: data.totalVendas});
+  vendas.push({ metodo: data.metodoPagamento, valor: data.totalVendas });
   if (vendas.length === metodosPagamento.length) {
     exibirBaloes();
   }
@@ -20,13 +20,12 @@ ipcRenderer.on('getTotalVendasResponse', (event, data) => {
 });
 
 function buscarDados() {
-  vendas = []; // Limpa o array de vendas
+  vendas = [];
 
-  dataInicio = document.getElementById('dataInicio').value; // Atualize as variáveis aqui
-  dataFim = document.getElementById('dataFim').value; // Atualize as variáveis aqui
+  dataInicio = document.getElementById('dataInicio').value;
+  dataFim = document.getElementById('dataFim').value;
 
   if (!dataInicio || !dataFim) {
-    // As datas de início ou fim não são válidas
     console.error('Por favor, insira datas de início e fim válidas.');
     return;
   }
@@ -36,13 +35,26 @@ function buscarDados() {
   metodosPagamento.forEach(metodoPagamento => {
     ipcRenderer.send('getTotalVendasPorMetodoPagamento', metodoPagamento, dataInicio, dataFim);
   });
+
+  ipcRenderer.send('filtrar-pagamentos-por-intervalo', { dataInicio, dataFim });
 }
 
+ipcRenderer.on('resultado-filtro-intervalo-pagamentos', (event, dadosPagamentosFiltrados) => {
+  const totalPagamentos = dadosPagamentosFiltrados.reduce((total, pagamento) => total + pagamento.valor_pago, 0);
+  const totalFormatado = totalPagamentos.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  const divTotalIntervaloPagamentos = document.getElementById('totalIntervaloPagamentos');
+  divTotalIntervaloPagamentos.innerHTML = `
+    <div class="metodo">Total no intervalo</div>
+    <div class="valor">R$ ${totalFormatado}</div>
+    <div class="porcentagem">100% do total</div>
+  `;
+  divTotalIntervaloPagamentos.style.display = 'block';
+});
 
 function exibirBaloes() {
-  
   let baloesDiv = document.getElementById('baloes');
-  baloesDiv.innerHTML = ''; // Limpa o conteúdo da div
+  baloesDiv.innerHTML = '';
+
   vendas.forEach(venda => {
     if (venda.valor != null && totalVendas != null) {
       let porcentagem = ((venda.valor / totalVendas) * 100).toFixed(2);
@@ -55,7 +67,7 @@ function exibirBaloes() {
       `;
     }
   });
-  // Exibir o valor total
+
   if (totalVendas != null) {
     baloesDiv.innerHTML += `
       <div class="balao total">
@@ -66,8 +78,6 @@ function exibirBaloes() {
     `;
   }
 }
-
-
 
 const botaoBuscar = document.querySelector('.buscar');
 const divTotalIntervaloPagamentos = document.getElementById('totalIntervaloPagamentos');
@@ -81,5 +91,5 @@ botaoBuscar.addEventListener('click', () => {
 ipcRenderer.on('resultado-filtro-intervalo-pagamentos', (event, dadosPagamentosFiltrados) => {
   const totalPagamentos = dadosPagamentosFiltrados.reduce((total, pagamento) => total + pagamento.valor_pago, 0);
   const totalFormatado = totalPagamentos.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-  divTotalIntervaloPagamentos.textContent = `Total no intervalo: R$ ${totalFormatado}`;
+  divTotalIntervaloPagamentos.textContent = `Pagamentos no intervalo ${totalFormatado}`;
 });

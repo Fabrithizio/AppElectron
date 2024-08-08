@@ -319,6 +319,8 @@ ipcMain.on('filtrar-pagamentos-por-intervalo', (event, { dataInicio, dataFim }) 
     });
 });
 
+
+//codigo responsavel por buscara os pagamentos efetuado em um priodo de tempo estipulado
 function buscarPagamentosPorIntervalo(dataInicio, dataFim) {
   return new Promise((resolve, reject) => {
     const query = `

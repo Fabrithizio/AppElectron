@@ -1,42 +1,108 @@
-*{
+* {
   margin: 0;
   padding: 0;
   font-family: sans-serif;
 }
+
+body {
+  background-color: #adadad;
+}
+
+header {
+  height: 70px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+header h1 {
+  font-size: 28pt;
+}
+
+.voltar {
+  position: absolute;
+  left: 12px;
+  top: 8%;
+  transform: translateY(-50%);
+}
+
+.filtro {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.filtorData {
+  font-size: 13pt;
+  display: flex;
+  margin-right: 15px;
+  text-align: center;
+}
+
+.buscar {
+  font-size: 13pt;
+  width: 75px;
+  cursor: pointer;
+  height: 30px;
+}
+
+.buscar:hover {
+  background-color: #6c757d;
+}
+
+.container {
+  display: flex;
+  justify-content: space-between;
+}
+
+.left-column {
+  width: 48%;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.right-column .balao.total {
+  background-color: #756AEB; /* Nova cor de fundo */
+  margin-top: 10px; /* Margem superior */
+  width: 200px; /* Mesma largura dos outros balões */
+  text-align: center;
+  justify-content: center;
+  font-weight: bold;
+  
+}
+
 .balao {
   width: 200px;
   padding: 10px;
   margin-bottom: 10px;
-  border: 1px solid #28a745;
-  border-radius: 15px; /* bordas mais suaves */
-  color: rgb(0, 0, 0); /* texto branco para contraste */
-}
-body{
-  background-color: #adadad;
+  border-radius: 15px;
+  color: rgb(0, 0, 0);
 }
 
 .balao.pix {
-  background-color: #20c997; /* cor para Pix */
+  background-color: #20c997;
 }
 
 .balao.especie {
-  background-color: #17a2b8; /* cor para Especie */
+  background-color: #17a2b8;
 }
 
 .balao.fiado {
-  background-color: #ffc107; /* cor para Fiado */
+  background-color: #ffc107;
 }
 
 .balao.debito {
-  background-color: #dc3545; /* cor para Debito */
+  background-color: #dc3545;
 }
 
 .balao.credito {
-  background-color: #28a745; /* cor para Credito */
+  background-color: #28a745;
 }
 
 .balao.total {
-  background-color: #6c757d; /* cor para Total */
+  background-color: #6c757d;
 }
 
 .valor {
@@ -46,48 +112,4 @@ body{
 
 .porcentagem {
   font-size: 14px;
-}
-
-header {
-  height: 70px;
-  width: 100%; /* Ajuste para 100% para que o cabeçalho ocupe toda a largura */
-  display: flex;
-  justify-content: center; /* Alinha os itens horizontalmente ao centro */
-  align-items: center; /* Alinha os itens verticalmente ao centro */
-  margin-bottom: 20px;
-}
-header h1{
-  font-size: 28pt;
-}
-.voltar {
-  position: absolute;
-  left: 12px;
-  top: 8%;
-  transform: translateY(-50%);
-}
-.filtro{
- display: flex;
-  justify-content: center;
-  align-items: center;
-  
-}
-.filtorData{
-  font-size: 13pt;
-  display: flex;
-  margin-right: 15px;
-  text-align: center;
-}
-
-.buscar{
- 
-  font-size: 13pt;
-  width: 75px;
-  cursor: pointer;
-  height: 30px;
- 
-
-}
-.buscar:hover{
-  background-color: #6c757d;
-
 }

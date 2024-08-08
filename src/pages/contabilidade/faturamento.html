@@ -12,23 +12,20 @@
 </header>
 
 <div class="filtro">
-  
-     <label class="filtorData" for="dataInicio"><strong>Início:</strong></label>
-     <input class="filtorData" type="date" id="dataInicio" name="dataInicio">
- 
- 
-
- 
-    <label class="filtorData" for="dataFim"><strong>Fim:</strong></label>
-    <input class="filtorData" type="date" id="dataFim" name="dataFim">
-    <button  onclick="buscarDados()" class="buscar">Buscar</button>
-
-
+  <label class="filtorData" for="dataInicio"><strong>Início:</strong></label>
+  <input class="filtorData" type="date" id="dataInicio" name="dataInicio">
+  <label class="filtorData" for="dataFim"><strong>Fim:</strong></label>
+  <input class="filtorData" type="date" id="dataFim" name="dataFim">
+  <button onclick="buscarDados()" class="buscar">Buscar</button>
 </div>
 
+<div class="container">
+  <div id="baloes" class="left-column"></div>
+  <div class="right-column">
+    <div id="totalIntervaloPagamentos" class="balao total" style="display: none;"></div>
+  </div>
+</div>
 
-<div id="baloes"></div>
-  <div id="totalIntervaloPagamentos"></div>
 <script src="faturamento.js"></script>
 </body>
 </html>
