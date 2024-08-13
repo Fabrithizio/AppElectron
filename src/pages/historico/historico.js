@@ -1,6 +1,7 @@
 const { ipcRenderer } = require('electron');
 const moment = require('moment');
 
+// Função para inserir dados na tabela de vendas
 function inserirDadosNaTabela(dadosVendas) {
   const tabelaHistoricoVendas = document.getElementById('tabela-historico').getElementsByTagName('tbody')[0];
   tabelaHistoricoVendas.innerHTML = ''; 
@@ -12,7 +13,6 @@ function inserirDadosNaTabela(dadosVendas) {
     var descricao = venda.descricao.split('\n');
     var descricaoFormatada = '';
     for (var i = 0; i < descricao.length; i++) {
-      // Adiciona cor e negrito aos diferentes componentes da descrição
       descricao[i] = descricao[i].replace('Item:', '<span style="color: maroon; font-weight: bold;">Item:</span>');
       descricao[i] = descricao[i].replace('Quant:', '<span style="color: blue; font-weight: bold;">Quant:</span>');
       descricao[i] = descricao[i].replace('Valor: R$', '<span style="color: green; font-weight: bold;">Valor: R$ </span>');
@@ -21,7 +21,6 @@ function inserirDadosNaTabela(dadosVendas) {
     linha.insertCell(2).innerHTML = descricaoFormatada;
     linha.insertCell(3).textContent = 'R$ ' + venda.preco.toFixed(2);
   
-    // Formata a data para o formato 'dia/mês/ano'
     const dataVenda = venda.dataVenda;
     const partesData = dataVenda.split('-');
     const dataFormatada = `${partesData[2]}/${partesData[1]}/${partesData[0]}`;
@@ -31,26 +30,70 @@ function inserirDadosNaTabela(dadosVendas) {
     const deleteCell = linha.insertCell(6);
     deleteCell.innerHTML = `<button class="delete-button" data-id="${venda.id}">X</button>`;
   });
-  
-// botão que exclui uma venda do sistema
-let deleteButtons = document.querySelectorAll('.delete-button');
-deleteButtons.forEach(button => {
-  let newButton = button.cloneNode(true);
-  button.parentNode.replaceChild(newButton, button);
-});
 
-deleteButtons = document.querySelectorAll('.delete-button');
-deleteButtons.forEach(button => {
-  button.addEventListener('click', (event) => {
-    const id = event.target.getAttribute('data-id');
-    ipcRenderer.send('confirm-delete', id);
+  // Adiciona eventos de clique aos botões de exclusão de vendas
+  let deleteButtons = document.querySelectorAll('.delete-button');
+  deleteButtons.forEach(button => {
+    let newButton = button.cloneNode(true);
+    button.parentNode.replaceChild(newButton, button);
   });
-});
 
+  deleteButtons = document.querySelectorAll('.delete-button');
+  deleteButtons.forEach(button => {
+    button.addEventListener('click', (event) => {
+      const id = event.target.getAttribute('data-id');
+      ipcRenderer.send('confirm-delete', id);
+    });
+  });
 }
 
+// Função para inserir dados na tabela de pagamentos
+function inserirDadosNaTabelaPagamentos(dadosPagamentos) {
+  const tabelaHistoricoPagamentos = document.getElementById('tabela-historico-pagamentos').getElementsByTagName('tbody')[0];
+  tabelaHistoricoPagamentos.innerHTML = ''; 
+
+  dadosPagamentos.forEach(pagamento => {
+    const linha = tabelaHistoricoPagamentos.insertRow(0);
+    linha.insertCell(0).textContent = pagamento.nome_pagador;
+    
+    const celulaDividaAnterior = linha.insertCell(1);
+    celulaDividaAnterior.textContent = 'R$ ' + pagamento.divida_anterior.toFixed(2);
+    celulaDividaAnterior.classList.add('divida-anterior');
+  
+    const celulaValorPago = linha.insertCell(2);
+    celulaValorPago.textContent = 'R$ ' + pagamento.valor_pago.toFixed(2);
+    celulaValorPago.classList.add('valor-pago');
+  
+    const celulaDividaRestante = linha.insertCell(3);
+    celulaDividaRestante.textContent = 'R$ ' + pagamento.divida_restante.toFixed(2);
+    celulaDividaRestante.classList.add('divida-restante');
+  
+    const dataPagamento = pagamento.data_pagamento;
+    const dataFormatada = moment(dataPagamento).format('DD/MM/YYYY');
+    linha.insertCell(4).textContent = dataFormatada;
+
+    const deleteCell = linha.insertCell(5);
+    deleteCell.innerHTML = `<button class="delete-button" data-id="${pagamento.id}">X</button>`;
+  });
+
+  // Adiciona eventos de clique aos botões de exclusão de pagamentos
+  let deleteButtons = document.querySelectorAll('.delete-button');
+  deleteButtons.forEach(button => {
+    let newButton = button.cloneNode(true);
+    button.parentNode.replaceChild(newButton, button);
+  });
+
+  deleteButtons = document.querySelectorAll('.delete-button');
+  deleteButtons.forEach(button => {
+    button.addEventListener('click', (event) => {
+      const id = event.target.getAttribute('data-id');
+      ipcRenderer.send('confirm-delete-payment', id);
+    });
+  });
+}
 
 document.addEventListener('DOMContentLoaded', (event) => {
+  // Carregar histórico de vendas
   const botaoCarregar = document.getElementById('carregarHistorico');
   if (botaoCarregar) {
     botaoCarregar.addEventListener('click', () => {
@@ -74,89 +117,44 @@ document.addEventListener('DOMContentLoaded', (event) => {
     inserirDadosNaTabela(dadosVendasFiltradas);
   });
 
-
-  
-  // historico de pagamentos ↓↓↓
+  // Carregar histórico de pagamentos
   const botaoCarregarPagamentos = document.getElementById('carregarHistoricoPagamentos');
   if (botaoCarregarPagamentos) {
     botaoCarregarPagamentos.addEventListener('click', () => {
       ipcRenderer.send('carregar-dados-historico-pagamentos');
     });
   }
-  function inserirDadosNaTabelaPagamentos(dadosPagamentos) {
-    const tabelaHistoricoPagamentos = document.getElementById('tabela-historico-pagamentos').getElementsByTagName('tbody')[0];
-    tabelaHistoricoPagamentos.innerHTML = ''; // Limpa a tabela antes de adicionar novos dados
-  
-    dadosPagamentos.forEach(pagamento => {
-      const linha = tabelaHistoricoPagamentos.insertRow(0);
-      linha.insertCell(0).textContent = pagamento.nome_pagador;
-      
-      const celulaDividaAnterior = linha.insertCell(1);
-      celulaDividaAnterior.textContent = 'R$ ' +  pagamento.divida_anterior.toFixed(2);
-      celulaDividaAnterior.classList.add('divida-anterior');
-    
-      const celulaValorPago = linha.insertCell(2);
-      celulaValorPago.textContent = 'R$ ' +  pagamento.valor_pago.toFixed(2);
-      celulaValorPago.classList.add('valor-pago');
-    
-      const celulaDividaRestante = linha.insertCell(3);
-      celulaDividaRestante.textContent = 'R$ ' +  pagamento.divida_restante.toFixed(2);
-      celulaDividaRestante.classList.add('divida-restante');
-    
-   // Converte a data do formato ISO para o formato local 'DD/MM/YYYY'
-   var dataPagamento = pagamento.data_pagamento;
-   const dataFormatada = moment(dataPagamento).format('DD/MM/YYYY');
-   linha.insertCell(4).textContent = dataFormatada;
 
-    });
-  }
-  
-  // envia uma chamada para o main 
   ipcRenderer.on('dados-historico-pagamentos', (event, dadosPagamentos) => {
     inserirDadosNaTabelaPagamentos(dadosPagamentos);
   });
 
+  const botaoFiltrarPagamentos = document.getElementById('filtrarPorDataPagamentos');
+  const inputFiltroDataPagamentos = document.getElementById('filtroDataPagamentos');
 
-const botaoFiltrarPagamentos = document.getElementById('filtrarPorDataPagamentos');
-botaoFiltrarPagamentos.addEventListener('click', () => {
-  const dataSelecionada = new Date(document.getElementById('filtroDataPagamentos').value).toISOString().split('T')[0];
-  ipcRenderer.send('filtrar-pagamentos-por-data', dataSelecionada);
-  
-  
-});
-
+  botaoFiltrarPagamentos.addEventListener('click', () => {
+    const dataSelecionada = new Date(inputFiltroDataPagamentos.value).toISOString().split('T')[0];
+    ipcRenderer.send('filtrar-pagamentos-por-data', dataSelecionada);
+  });
 
   ipcRenderer.on('resultado-filtro-data-pagamentos', (event, dadosPagamentosFiltrados) => {
     inserirDadosNaTabelaPagamentos(dadosPagamentosFiltrados);
   });
 
+  // Atualiza a interface após a exclusão de um pagamento
+  ipcRenderer.on('delete-payment-success', (event, id) => {
+    const rowToDelete = document.querySelector(`button[data-id="${id}"]`).closest('tr');
+    rowToDelete.remove();
+  });
+
+  // Calcula e exibe o total de pagamentos filtrados
+  ipcRenderer.on('resultado-filtro-data-pagamentos', (event, dadosPagamentosFiltrados) => {
+    const totalPagamentos = dadosPagamentosFiltrados.reduce((total, pagamento) => total + pagamento.valor_pago, 0);
+    const totalFormatado = totalPagamentos.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    const divTotalPagamentos = document.getElementById('totalPagamentos');
+    divTotalPagamentos.textContent = `Total: R$ ${totalFormatado}`;
+  });
 });
-
-
-
-
-
-const botaoFiltrarPagamentos = document.getElementById('filtrarPorDataPagamentos');
-const divTotalPagamentos = document.getElementById('totalPagamentos');
-
-botaoFiltrarPagamentos.addEventListener('click', () => {
-  const dataSelecionada = new Date(document.getElementById('filtroDataPagamentos').value).toISOString().split('T')[0];
-  ipcRenderer.send('filtrar-pagamentos-por-data', dataSelecionada);
-});
-
-// Dentro do evento 'resultado-filtro-data-pagamentos'
-ipcRenderer.on('resultado-filtro-data-pagamentos', (event, dadosPagamentosFiltrados) => {
-  // Calcula a soma dos valores pagos
-  const totalPagamentos = dadosPagamentosFiltrados.reduce((total, pagamento) => total + pagamento.valor_pago, 0);
-  
-  // Formata o total com separador de milhares
-  const totalFormatado = totalPagamentos.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-  
-  // Exibe o total na div
-  divTotalPagamentos.textContent = `Total: R$ ${totalFormatado}`;
-});
-
-
 
 
 

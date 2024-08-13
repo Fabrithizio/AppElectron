@@ -3,6 +3,7 @@ const { db, insertCliente, insertVenda, updateCliente, somaVendas,somaVendasPorM
 const moment = require('moment');
 
 
+
 // sistema pesquisar historico do sitema de pesquisa 
 ipcMain.on('historico-vendas', (event, searchTerm) => {
   db.all('SELECT * FROM vendas WHERE cliente = ?', [searchTerm], function (err, rows) {
@@ -23,6 +24,10 @@ ipcMain.on('historico-pagamentos', (event, searchTerm) => {
       event.sender.send('historico-pagamentos-results', rows);
   });
 });
+
+
+
+
 
 
 
@@ -210,7 +215,7 @@ ipcMain.on('delete-venda', (event, id) => {
 });
 
 
-// historico de pagamentos
+// Carregar dados do histórico de pagamentos
 ipcMain.on('carregar-dados-historico-pagamentos', (event) => {
   db.all('SELECT * FROM Pagamentos', [], (err, rows) => {
     if (err) {
@@ -220,6 +225,21 @@ ipcMain.on('carregar-dados-historico-pagamentos', (event) => {
     }
   });
 });
+
+
+// Excluir pagamento
+ipcMain.on('confirm-delete-payment', (event, id) => {
+  db.run('DELETE FROM Pagamentos WHERE id = ?', id, function(err) {
+    if (err) {
+      event.sender.send('erro', 'Não foi possível excluir o pagamento.');
+    } else {
+      event.sender.send('delete-payment-success', id);
+    }
+  });
+});
+
+
+
 
 //responsavel por filtra o  hstorico de vendas
 ipcMain.on('filtrar-vendas-por-data', (event, dataSelecionada) => {
