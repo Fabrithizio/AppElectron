@@ -158,7 +158,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
 
 
-
 document.addEventListener('DOMContentLoaded', (event) => {
   // Esconde os elementos específicos inicialmente
   const tabelaHistorico = document.getElementById('tabela-historico');

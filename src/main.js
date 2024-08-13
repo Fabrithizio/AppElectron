@@ -227,17 +227,26 @@ ipcMain.on('carregar-dados-historico-pagamentos', (event) => {
 });
 
 
-// Excluir pagamento
-ipcMain.on('confirm-delete-payment', (event, id) => {
-  db.run('DELETE FROM Pagamentos WHERE id = ?', id, function(err) {
-    if (err) {
-      event.sender.send('erro', 'Não foi possível excluir o pagamento.');
-    } else {
-      event.sender.send('delete-payment-success', id);
-    }
+// Excluir pagamento com confirmação
+ipcMain.on('confirm-delete-payment', async (event, id) => {
+  const result = await dialog.showMessageBox({
+    type: 'warning',
+    buttons: ['Cancelar', 'Excluir'],
+    defaultId: 1,
+    title: 'Confirmar Exclusão',
+    message: 'Você tem certeza que deseja excluir este pagamento?',
   });
-});
 
+  if (result.response === 1) { // Se o usuário clicar em "Excluir"
+    db.run('DELETE FROM Pagamentos WHERE id = ?', id, function(err) {
+      if (err) {
+        event.sender.send('erro', 'Não foi possível excluir o pagamento.');
+      } else {
+        event.sender.send('delete-payment-success', id);
+      }
+    });
+  }
+});
 
 
 
