@@ -449,6 +449,21 @@ ipcMain.on('get-activities-by-client', (event, clientName) => {
 });
 
 
+
+
+//nusca no banco todos os clientes e exibe seus dados ao clicar em um bonao no pesquisar
+ipcMain.on('buscar-clientes', (event) => {
+  db.all('SELECT * FROM Clientes', [], (err, rows) => {
+      if (err) {
+          console.error(err);
+          return;
+      }
+      event.reply('clientes-dados', rows);
+  });
+});
+
+
+
 //controle do sistema electron
 function createWindow() {
   const win = new BrowserWindow({

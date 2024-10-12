@@ -9,6 +9,32 @@ function historico() {
   ipcRenderer.send('historico-pagamentos', searchTerm);
 }
 
+
+
+
+
+function verClientes() {
+  ipcRenderer.send('buscar-clientes');
+}
+
+ipcRenderer.on('clientes-dados', (event, clientes) => {
+  const modal = document.getElementById('modal');
+  const modalText = document.getElementById('modal-text');
+  modalText.innerHTML = clientes.map(cliente => `
+      <p>Nome: ${cliente.nome}</p>
+      <p>CPF: ${cliente.cpf}</p>
+      <p>Endereço: ${cliente.endereco}</p>
+      <hr>
+  `).join('');
+  modal.style.display = 'block';
+});
+
+document.querySelector('.close-button').addEventListener('click', () => {
+  document.getElementById('modal').style.display = 'none';
+});
+
+
+
 ipcRenderer.on('historico-vendas-results', (event, rows) => {
   var results = document.getElementById('historico-div');
   results.innerHTML = '';
@@ -327,5 +353,7 @@ ipcRenderer.on('search-results', (event, rows) => {
       
       
   }
+
+
 
 });
