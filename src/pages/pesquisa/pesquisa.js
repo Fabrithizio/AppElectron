@@ -12,7 +12,6 @@ function historico() {
 
 
 
-
 function verClientes() {
   ipcRenderer.send('buscar-clientes');
 }
@@ -20,12 +19,38 @@ function verClientes() {
 ipcRenderer.on('clientes-dados', (event, clientes) => {
   const modal = document.getElementById('modal');
   const modalText = document.getElementById('modal-text');
-  modalText.innerHTML = clientes.map(cliente => `
-      <p>Nome: ${cliente.nome}</p>
-      <p>CPF: ${cliente.cpf}</p>
-      <p>Endereço: ${cliente.endereco}</p>
-      <hr>
-  `).join('');
+  modalText.innerHTML = `
+      <table>
+          <thead>
+              <tr>
+                  <th>Nome</th>
+                  <th>Data de Nascimento</th>
+                  <th>CPF</th>
+                  <th>RG</th>
+                  <th>Endereço</th>
+                  <th>Telefone</th>
+                  <th>Email</th>
+                  <th>Dívida</th>
+                  <th>Data de Pagamento</th>
+              </tr>
+          </thead>
+          <tbody>
+              ${clientes.map(cliente => `
+                  <tr>
+                      <td>${cliente.nome}</td>
+                      <td>${cliente.DataNascimento}</td>
+                      <td>${cliente.cpf}</td>
+                      <td>${cliente.rg}</td>
+                      <td>${cliente.endereco}</td>
+                      <td>${cliente.telefone}</td>
+                      <td>${cliente.email}</td>
+                      <td>${cliente.divida}</td>
+                      <td>${cliente.dataPagamento}</td>
+                  </tr>
+              `).join('')}
+          </tbody>
+      </table>
+  `;
   modal.style.display = 'block';
 });
 

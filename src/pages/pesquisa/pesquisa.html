@@ -5,61 +5,32 @@
     <title>Pesquisa</title>
     <link rel="stylesheet" href="pesquisa.css">
 </head>
-
 <body>
     <div class="container">
-
-        <!--lado esquesquerdo onde sao feita as buscas-->
+        <!--lado esquerdo onde são feitas as buscas-->
         <div class="lado_esquerdo">
-
             <div class="search-container">
                 <h1>Buscar</h1>
                 <input type="text" id="search" placeholder="Digite o nome do cliente">
                 <button id="pesquisar" onclick="search()">Pesquisar</button>
             </div>
-            
             <div id="results"></div>
-
-        <a href="../../index.html"><img src="../../imgs/voltar.png" alt="home"></a>
-
-       
-
-
-        <button id="historico" onclick="historico()">Ver Histórico</button>
-
-        <div id="historico-div" style="display: none; position: absolute; z-index: 1;">
-        
-            <!-- O conteúdo do histórico será inserido aqui -->
+            <a href="../../index.html"><img src="../../imgs/voltar.png" alt="home"></a>
+            <button id="historico" onclick="historico()">Ver Histórico</button>
+            <div id="historico-div" style="display: none; position: absolute; z-index: 1;"></div>
         </div>
-
-
-        </div>
-
-        <!--lado direito do sistema de busca onde sao mostrados os dados-->
+        <!--lado direito do sistema de busca onde são mostrados os dados-->
         <div class="lado_direito">
-
             <div id="results-dados"></div>
-
         </div>
         <div id="modal" class="modal">
             <div class="modal-content">
-              <span class="close-button">×</span>
-              <p id="modal-text"></p>
+                <span class="close-button">×</span>
+                <p id="modal-text"></p>
             </div>
-          </div>
-          
-    </div>
-
-
-
-    <div id="modal" class="modal">
-        <div class="modal-content">
-            <span class="close-button">×</span>
-            <p id="modal-text"></p>
         </div>
+        <button id="verClientes" onclick="verClientes()">Ver Clientes</button>
     </div>
-    
-    <button id="verClientes" onclick="verClientes()">Ver Clientes</button>
-     <script src="pesquisa.js"></script>
+    <script src="pesquisa.js"></script>
 </body>
 </html>
