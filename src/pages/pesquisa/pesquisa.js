@@ -23,6 +23,7 @@ ipcRenderer.on('clientes-dados', (event, clientes) => {
       <table>
           <thead>
               <tr>
+                  <th>ID</th>
                   <th>Nome</th>
                   <th>Data de Nascimento</th>
                   <th>CPF</th>
@@ -37,6 +38,7 @@ ipcRenderer.on('clientes-dados', (event, clientes) => {
           <tbody>
               ${clientes.map(cliente => `
                   <tr>
+                      <td>${cliente.id}</td>
                       <td>${cliente.nome}</td>
                       <td>${cliente.DataNascimento}</td>
                       <td>${cliente.cpf}</td>
