@@ -58,7 +58,6 @@ app.on('ready', () => {
 
 
 
-
 ipcMain.on('verificar-pagamentos', (event) => {
   let dataAtual = new Date();
   dataAtual.setHours(0, 0, 0, 0);
@@ -79,13 +78,19 @@ ipcMain.on('verificar-pagamentos', (event) => {
       let clientesComDivida = new Set(); // Usar Set para evitar duplicatas
 
       rows.forEach((row) => {
-        let dataPagamento = new Date(row.ultima_data_pagamento || 0);
-        dataPagamento.setHours(0, 0, 0, 0);
-        let diffTime = Math.abs(dataAtual - dataPagamento);
-        let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        let dataPagamento = row.ultima_data_pagamento ? new Date(row.ultima_data_pagamento) : null;
+        if (dataPagamento) {
+          dataPagamento.setHours(0, 0, 0, 0);
+        }
+        let diffDays = null;
+
+        if (dataPagamento) {
+          let diffTime = Math.abs(dataAtual - dataPagamento);
+          diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
 
         // Verifica se o cliente tem dívida e se passaram 30 ou mais dias desde o último pagamento ou compra
-        if (row.divida > 0 && (isNaN(dataPagamento) || diffDays >= 30)) {
+        if (row.divida > 0 && (!dataPagamento || diffDays >= 30)) {
           encontrouPagamento = true;
           clientesComDivida.add(row.nome.toUpperCase());
         }
@@ -100,13 +105,14 @@ ipcMain.on('verificar-pagamentos', (event) => {
       } else {
         dialog.showMessageBox({
           type: 'warning',
-          title: `Alerta de Pagamento`,
+          title: 'Alerta de Pagamento',
           message: `//Clientes com dívida vencida// \n > ${[...clientesComDivida].join('\n >')}.`
         });
       }
     }
   });
 });
+
 
 
 
