@@ -62,53 +62,70 @@ ipcMain.on('verificar-pagamentos', (event) => {
   let dataAtual = new Date();
   dataAtual.setHours(0, 0, 0, 0);
 
-  db.all("SELECT c.nome, c.divida, MAX(p.data_pagamento) AS ultima_data_pagamento FROM Clientes c LEFT JOIN Pagamentos p ON c.nome = p.nome_pagador GROUP BY c.nome", (err, rows) => {
+  db.all(`
+    SELECT c.nome, c.divida, 
+      COALESCE(MAX(p.data_pagamento), NULL) AS ultima_data_pagamento, 
+      COALESCE(MAX(v.dataVenda), NULL) AS ultima_data_compra
+    FROM Clientes c
+    LEFT JOIN Pagamentos p ON c.nome = p.nome_pagador
+    LEFT JOIN Vendas v ON c.nome = v.cliente
+    GROUP BY c.nome
+  `, (err, rows) => {
     if (err) {
-      throw err;
+      console.error("Erro no banco de dados:", err);
+      return;
     }
 
-    if (rows.length === 0) {
-      dialog.showMessageBox({
+    if (!rows || rows.length === 0) {
+      dialog.showMessageBoxSync({
         type: 'info',
         title: 'Verificação de Pagamentos',
         message: 'Não há pagamentos para verificar.'
       });
-    } else {
-      let encontrouPagamento = false;
-      let clientesComDivida = new Set(); // Usar Set para evitar duplicatas
+      return;
+    }
 
-      rows.forEach((row) => {
-        let dataPagamento = row.ultima_data_pagamento ? new Date(row.ultima_data_pagamento) : null;
-        if (dataPagamento) {
-          dataPagamento.setHours(0, 0, 0, 0);
-        }
-        let diffDays = null;
+    let encontrouInadimplente = false;
+    let clientesComDivida = new Set();
 
-        if (dataPagamento) {
-          let diffTime = Math.abs(dataAtual - dataPagamento);
-          diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        }
+    rows.forEach((row) => {
+      let dataPagamento = row.ultima_data_pagamento ? new Date(row.ultima_data_pagamento) : null;
+      let dataCompra = row.ultima_data_compra ? new Date(row.ultima_data_compra) : null;
 
-        // Verifica se o cliente tem dívida e se passaram 30 ou mais dias desde o último pagamento ou compra
-        if (row.divida > 0 && (!dataPagamento || diffDays >= 30)) {
-          encontrouPagamento = true;
+      if (dataPagamento && isNaN(dataPagamento)) dataPagamento = null;
+      if (dataCompra && isNaN(dataCompra)) dataCompra = null;
+
+      if (dataPagamento) dataPagamento.setHours(0, 0, 0, 0);
+      if (dataCompra) dataCompra.setHours(0, 0, 0, 0);
+
+      let diffDaysPagamento = dataPagamento ? Math.ceil((dataAtual - dataPagamento) / (1000 * 60 * 60 * 24)) : null;
+      let diffDaysCompra = dataCompra ? Math.ceil((dataAtual - dataCompra) / (1000 * 60 * 60 * 24)) : null;
+
+      // ⚡ Lógica para exibir cliente como inadimplente ⚡
+      if (row.divida > 0) {
+        if (
+          (!dataCompra && !dataPagamento) || // (1) Nunca comprou nem pagou, mas tem dívida
+          (!dataPagamento && diffDaysCompra >= 30) || // (2) Comprou há mais de 30 dias e não pagou
+          (dataPagamento && diffDaysPagamento >= 30) // (3) Pagou, mas já faz mais de 30 dias e ainda tem dívida
+        ) {
+          encontrouInadimplente = true;
           clientesComDivida.add(row.nome.toUpperCase());
         }
-      });
-
-      if (!encontrouPagamento) {
-        dialog.showMessageBox({
-          type: 'info',
-          title: 'Verificação de Pagamentos',
-          message: 'Não há clientes com dívida vencida há 30 ou mais dias.'
-        });
-      } else {
-        dialog.showMessageBox({
-          type: 'warning',
-          title: 'Alerta de Pagamento',
-          message: `//Clientes com dívida vencida// \n > ${[...clientesComDivida].join('\n >')}.`
-        });
       }
+    });
+
+    if (!encontrouInadimplente) {
+      dialog.showMessageBoxSync({
+        type: 'info',
+        title: 'Verificação de Pagamentos',
+        message: 'Não há clientes com dívida vencida há 30 ou mais dias.'
+      });
+    } else {
+      dialog.showMessageBoxSync({
+        type: 'warning',
+        title: 'Alerta de Pagamento',
+        message: `//Clientes com dívida vencida// \n > ${[...clientesComDivida].join('\n >')}.`
+      });
     }
   });
 });
