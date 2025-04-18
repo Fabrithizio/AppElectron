@@ -53,13 +53,17 @@ app.on('ready', () => {
   });
 });
 
+
+
+
+
+
+
 ipcMain.on('verificar-pagamentos', (event) => {
-  // Obtém a data atual do sistema e define a hora para meia-noite
   let dataAtual = new Date();
   dataAtual.setHours(0, 0, 0, 0);
-  let diaAtual = dataAtual.getDate();
 
-  db.all("SELECT * FROM clientes", (err, rows) => {
+  db.all("SELECT c.nome, c.divida, MAX(p.data_pagamento) AS ultima_data_pagamento FROM Clientes c LEFT JOIN Pagamentos p ON c.nome = p.nome_pagador GROUP BY c.nome", (err, rows) => {
     if (err) {
       throw err;
     }
@@ -68,24 +72,22 @@ ipcMain.on('verificar-pagamentos', (event) => {
       dialog.showMessageBox({
         type: 'info',
         title: 'Verificação de Pagamentos',
-        message: 'Não há pagamentos para hoje.'
+        message: 'Não há pagamentos para verificar.'
       });
     } else {
       let encontrouPagamento = false;
-      let clientesComPagamento = [];
+      let clientesComDivida = new Set(); // Usar Set para evitar duplicatas
+
       rows.forEach((row) => {
-        // Converte a data de pagamento do cliente para o formato de data padrão do sistema e define a hora para meia-noite
-        let partesData = row.dataPagamento.split('-');
-        let dataPagamento = new Date(partesData[0], partesData[1] - 1, partesData[2]);
+        let dataPagamento = new Date(row.ultima_data_pagamento || 0);
         dataPagamento.setHours(0, 0, 0, 0);
-        let diaPagamento = dataPagamento.getDate();
+        let diffTime = Math.abs(dataAtual - dataPagamento);
+        let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-        // Compara a data de pagamento com a data atual
-        let dataIgual = diaAtual === diaPagamento;
-
-        if (dataIgual) {
+        // Verifica se o cliente tem dívida e se passaram 30 ou mais dias desde o último pagamento ou compra
+        if (row.divida > 0 && (isNaN(dataPagamento) || diffDays >= 30)) {
           encontrouPagamento = true;
-          clientesComPagamento.push(row.nome.toUpperCase());
+          clientesComDivida.add(row.nome.toUpperCase());
         }
       });
 
@@ -93,18 +95,25 @@ ipcMain.on('verificar-pagamentos', (event) => {
         dialog.showMessageBox({
           type: 'info',
           title: 'Verificação de Pagamentos',
-          message: 'Não há clientes com pagamentos a vencer hoje.'
+          message: 'Não há clientes com dívida vencida há 30 ou mais dias.'
         });
       } else {
         dialog.showMessageBox({
           type: 'warning',
           title: `Alerta de Pagamento`,
-          message: `//Clientes Na Data de Pagamento// \n > ${clientesComPagamento.join('\n >')}.`
+          message: `//Clientes com dívida vencida// \n > ${[...clientesComDivida].join('\n >')}.`
         });
       }
     }
   });
 });
+
+
+
+
+
+
+
 
 
 
