@@ -21,16 +21,17 @@ app.on('ready', () => {
   });
 });
 
-// sistema que verfiaca se esta na data de pagamento do cliente 
 ipcMain.on('verificar-pagamentos', (event) => {
+  // Obtém a data atual do sistema e define a hora para meia-noite
   let dataAtual = new Date();
-  let tresDiasDepois = new Date();
-  tresDiasDepois.setDate(dataAtual.getDate() + 3);
+  dataAtual.setHours(0, 0, 0, 0);
+  let diaAtual = dataAtual.getDate();
 
-  db.all("SELECT * FROM clientes WHERE dataPagamento >= ? AND dataPagamento <= ?", [dataAtual.toISOString().split('T')[0], tresDiasDepois.toISOString().split('T')[0]], (err, rows) => {
+  db.all("SELECT * FROM clientes", (err, rows) => {
     if (err) {
       throw err;
     }
+
     if (rows.length === 0) {
       dialog.showMessageBox({
         type: 'info',
@@ -38,16 +39,39 @@ ipcMain.on('verificar-pagamentos', (event) => {
         message: 'Não há pagamentos para hoje.'
       });
     } else {
+      let encontrouPagamento = false;
       rows.forEach((row) => {
-        dialog.showMessageBox({
-          type: 'warning',
-          title: `Alerta de Pagamento para ${row.nome.toUpperCase()}`,
-          message: `${row.nome.toUpperCase()} - Esta Na Data De Pagamento.`
-        });
+        // Converte a data de pagamento do cliente para o formato de data padrão do sistema e define a hora para meia-noite
+        let partesData = row.dataPagamento.split('-');
+        let dataPagamento = new Date(partesData[0], partesData[1] - 1, partesData[2]);
+        dataPagamento.setHours(0, 0, 0, 0);
+        let diaPagamento = dataPagamento.getDate();
+
+        // Compara a data de pagamento com a data atual
+        let dataIgual = diaAtual === diaPagamento;
+
+        if (dataIgual) {
+          encontrouPagamento = true;
+          dialog.showMessageBox({
+            type: 'warning',
+            title: `Alerta de Pagamento para ${row.nome.toUpperCase()}`,
+            message: `${row.nome.toUpperCase()} - Está na data de pagamento.`
+          });
+        }
       });
+
+      if (!encontrouPagamento) {
+        dialog.showMessageBox({
+          type: 'info',
+          title: 'Verificação de Pagamentos',
+          message: 'Não há clientes com pagamentos a vencer hoje.'
+        });
+      }
     }
   });
 });
+
+
 
 
 

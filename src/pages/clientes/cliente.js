@@ -70,7 +70,6 @@ document.getElementById('search').addEventListener('input', function(e) {
     }
   });
 });
-
 document.getElementById('updateButton').addEventListener('click', function() {
   // Obtém os valores do formulário de clientes
   const nome = document.getElementById('nome').value;
@@ -83,9 +82,12 @@ document.getElementById('updateButton').addEventListener('click', function() {
   const divida = document.getElementById('divida').value;
   const dataPagamento = document.getElementById('dataPagamento').value;
 
-  // Envia um evento IPC com os valores do formulário de clientes
-  ipcRenderer.send('update-cliente', { id: clienteId, nome, DataNascimento, cpf, rg, endereco, telefone, email, divida, dataPagamento });
+  // Prepara os dados do cliente
+  const clienteData = { id: clienteId, nome, DataNascimento, cpf, rg, endereco, telefone, email, divida, dataPagamento };
 
+  // Envia um evento IPC com os valores do formulário de clientes
+  ipcRenderer.send('update-cliente', clienteData);
 });
+
 
 })();
