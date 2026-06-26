@@ -1,115 +1,427 @@
 * {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 body {
-  background-color: #adadad;
+  min-height: 100vh;
+  color: #172121;
+  background: #eef1ef;
 }
 
 header {
-  height: 70px;
-  width: 100%;
   display: flex;
-  justify-content: center;
   align-items: center;
-  margin-bottom: 20px;
+  justify-content: center;
+  min-height: 72px;
+  padding: 14px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #d7ddda;
+  position: relative;
 }
 
 header h1 {
-  font-size: 28pt;
+  font-size: 26px;
 }
 
 .voltar {
   position: absolute;
-  left: 12px;
-  top: 8%;
-  transform: translateY(-50%);
+  left: 18px;
+  width: 44px;
+}
+
+#logoutButton {
+  position: absolute;
+  right: 18px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  background: #fff1f2;
+  color: #991b1b;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.login-panel {
+  width: min(440px, calc(100% - 32px));
+  margin: 76px auto;
+  padding: 24px;
+  border: 1px solid #d7ddda;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 16px 40px rgba(23, 33, 33, 0.08);
+}
+
+.login-panel h2 {
+  margin-bottom: 8px;
+  font-size: 22px;
+}
+
+.login-panel p {
+  margin-bottom: 14px;
+  color: #5b6764;
+  line-height: 1.4;
+}
+
+.login-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.login-row button {
+  width: 100%;
+}
+
+input,
+button,
+select {
+  min-height: 38px;
+  padding: 7px 9px;
+  border: 1px solid #cbd5d1;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+button {
+  background: #0f766e;
+  border-color: #0f766e;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #115e59;
+}
+
+.login-error {
+  min-height: 20px;
+  margin-top: 10px;
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+#ownerContent {
+  padding: 18px;
+}
+
+.owner-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.owner-tab {
+  min-height: 36px;
+  padding: 6px 12px;
+  background: #f8faf9;
+  border-color: #cbd5d1;
+  color: #172121;
+}
+
+.owner-tab.active {
+  background: #0f766e;
+  border-color: #0f766e;
+  color: #ffffff;
+}
+
+.filtro,
+.despesas-panel {
+  border: 1px solid #d7ddda;
+  border-radius: 8px;
+  background: #ffffff;
 }
 
 .filtro {
   display: flex;
-  justify-content: center;
-  align-items: center;
+  align-items: end;
+  gap: 12px;
+  padding: 14px;
 }
 
 .filtorData {
-  font-size: 13pt;
   display: flex;
-  margin-right: 15px;
-  text-align: center;
-}
-
-.buscar {
-  font-size: 13pt;
-  width: 75px;
-  cursor: pointer;
-  height: 30px;
-}
-
-.buscar:hover {
-  background-color: #6c757d;
+  flex-direction: column;
+  gap: 4px;
+  color: #4b5b57;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .container {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  gap: 16px;
+  margin-top: 16px;
 }
 
 .left-column {
-  width: 48%;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
 }
 
-.right-column .balao.total {
-  background-color: #756AEB; /* Nova cor de fundo */
-  margin-top: 10px; /* Margem superior */
-  width: 200px; /* Mesma largura dos outros balões */
-  text-align: center;
-  justify-content: center;
-  font-weight: bold;
-  
+.right-column {
+  display: flex;
+  align-items: stretch;
 }
 
 .balao {
-  width: 200px;
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 15px;
-  color: rgb(0, 0, 0);
+  min-height: 116px;
+  padding: 14px;
+  border: 1px solid #d7ddda;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #172121;
 }
 
-.balao.pix {
-  background-color: #20c997;
-}
-
-.balao.especie {
-  background-color: #17a2b8;
-}
-
-.balao.fiado {
-  background-color: #ffc107;
-}
-
-.balao.debito {
-  background-color: #dc3545;
-}
-
-.balao.credito {
-  background-color: #28a745;
-}
-
-.balao.total {
-  background-color: #6c757d;
+.balao .metodo {
+  color: #4b5b57;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .valor {
-  font-size: 20px;
-  font-weight: bold;
+  margin-top: 8px;
+  font-size: 24px;
+  font-weight: 800;
 }
 
 .porcentagem {
-  font-size: 14px;
+  margin-top: 4px;
+  color: #5b6764;
+  font-size: 13px;
+}
+
+.balao.entrada {
+  border-left: 5px solid #16a34a;
+}
+
+.balao.saida {
+  border-left: 5px solid #dc2626;
+}
+
+.balao.saldo {
+  border-left: 5px solid #0284c7;
+}
+
+.balao.pix,
+.balao.especie,
+.balao.fiado,
+.balao.debito,
+.balao.credito,
+.balao.total {
+  border-left: 5px solid #0f766e;
+}
+
+.right-column .balao {
+  width: 100%;
+}
+
+.despesas-panel,
+.settings-panel,
+.audit-panel,
+.users-panel {
+  margin-top: 16px;
+  padding: 16px;
+}
+
+.despesas-panel h2,
+.settings-panel h2,
+.audit-panel h2,
+.users-panel h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 20px;
+}
+
+.help-tip {
+  width: 28px;
+  min-height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  background: #eef1ef;
+  border-color: #cbd5d1;
+  color: #172121;
+}
+
+#despesaForm {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+#userForm {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(150px, 0.8fr) 150px minmax(140px, 0.7fr) auto auto;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.form-hint {
+  margin-bottom: 12px;
+  color: #5b6764;
+  font-size: 13px;
+}
+
+#tabelaDespesas {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+}
+
+.audit-filters {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(120px, 1fr)) auto;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+#tabelaAuditoria {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+}
+
+#tabelaUsuarios {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+}
+
+#tabelaUsuarios th,
+#tabelaUsuarios td {
+  padding: 8px;
+  border-bottom: 1px solid #e1e7e4;
+  text-align: left;
+}
+
+#tabelaUsuarios th {
+  background: #eef1ef;
+  color: #33423f;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+#tabelaUsuarios button {
+  min-height: 28px;
+  margin-right: 6px;
+  padding: 4px 8px;
+}
+
+.danger-inline {
+  background: #fff1f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+#tabelaAuditoria th,
+#tabelaAuditoria td {
+  padding: 8px;
+  border-bottom: 1px solid #e1e7e4;
+  text-align: left;
+  vertical-align: top;
+}
+
+#tabelaAuditoria th {
+  background: #eef1ef;
+  color: #33423f;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+#tabelaAuditoria td:last-child {
+  max-width: 320px;
+  color: #4b5b57;
+  font-size: 12px;
+  word-break: break-word;
+}
+
+#tabelaDespesas th,
+#tabelaDespesas td {
+  padding: 8px;
+  border-bottom: 1px solid #e1e7e4;
+  text-align: left;
+}
+
+#tabelaDespesas th {
+  background: #eef1ef;
+  color: #33423f;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+#tabelaDespesas button {
+  min-height: 28px;
+  padding: 4px 8px;
+  background: #fff1f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+#settingsForm {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+#settingsForm label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: #4b5b57;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+#settingsForm fieldset {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #d7ddda;
+  border-radius: 8px;
+}
+
+#settingsForm fieldset label {
+  align-items: center;
+  flex-direction: row;
+  text-transform: none;
+}
+
+#settingsForm button,
+#settingsStatus {
+  align-self: center;
+}
+
+#settingsStatus {
+  color: #0f766e;
+  font-weight: 700;
+}
+
+@media (max-width: 920px) {
+  .container,
+  #despesaForm,
+  #userForm,
+  .audit-filters,
+  #settingsForm,
+  #settingsForm fieldset {
+    grid-template-columns: 1fr;
+  }
+
+  .filtro {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }

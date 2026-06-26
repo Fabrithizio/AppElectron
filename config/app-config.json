@@ -1,0 +1,47 @@
+{
+  "company": {
+    "name": "Nice Modas & Artigos",
+    "appTitle": "Controle de Estoque",
+    "logo": "assets/imgs/logo-nice.png",
+    "whatsappUrl": "https://web.whatsapp.com/"
+  },
+  "auth": {
+    "sessionTimeoutMinutes": 30,
+    "users": [
+      {
+        "username": "admin",
+        "name": "Administrador",
+        "role": "owner",
+        "passwordSalt": "owner-default-salt",
+        "passwordHash": "81fe6a398fe35a68b2af5b4578de7bb1685c07a8dde3a45a76ae6faad0aa2f9b"
+      },
+      {
+        "username": "funcionario",
+        "name": "Funcionario",
+        "role": "staff",
+        "passwordSalt": "staff-default-salt",
+        "passwordHash": "1b3be845a3ac5c6cd95c2b611e7f7edd3abea6861c8a8995ca23d4576668959d"
+      }
+    ]
+  },
+  "theme": {
+    "primaryColor": "#0f766e",
+    "accentColor": "#2563eb"
+  },
+  "modules": {
+    "manualSales": true,
+    "clients": true,
+    "payments": true,
+    "finance": true,
+    "backup": true,
+    "simpleProducts": true,
+    "stockControl": false,
+    "barcode": true
+  },
+  "businessProfile": {
+    "level": "catalog",
+    "allowManualItems": true,
+    "allowProductCatalog": true,
+    "requireStockForSale": false
+  }
+}

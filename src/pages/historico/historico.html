@@ -2,84 +2,66 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Histórico</title>
+  <title>Historico</title>
+  <link rel="stylesheet" href="../../styles/base.css">
   <link rel="stylesheet" href="historico_style.css">
 </head>
 <body>
-<div id="totalPagamentos"></div>
-  <div class="container-historico">
-    <div class="top-bar">
-      <a href="../../index.html" class="tess"><img src="../../imgs/voltar.png" alt="home" id="home-hitorico"></a> 
-      <h2>Histórico</h2>
+  <header class="page-header">
+    <a href="../../index.html"><img src="../../assets/imgs/voltar.png" alt="home"></a>
+    <div>
+      <h1>Historico</h1>
+      <p>Consulte vendas e pagamentos por periodo, sem carregar anos de dados de uma vez.</p>
     </div>
-   
-    <div class="mid-bar">
+  </header>
 
-      <div class="data-filtro">
-        <button id="carregarHistorico" class="botao-historico">Vendas</button>
-        <img src="../../imgs/filtro.png" alt="filtro" class="filtro">
-        <input type="date" id="filtroData">
-        <button id="filtrarPorData">Filtrar</button>
+  <main>
+    <section class="toolbar">
+      <div class="tabs">
+        <button id="tabVendas" type="button" class="active">Vendas</button>
+        <button id="tabPagamentos" type="button">Pagamentos</button>
       </div>
 
-      <div class="data-filtro">
-        <button id="carregarHistoricoPagamentos" class="botao-historico">Pagamentos</button>
-        <img src="../../imgs/filtro.png" alt="filtro" class="filtro">
-        <input type="date" id="filtroDataPagamentos">
-        <button id="filtrarPorDataPagamentos">Filtrar</button>
+      <div class="filters">
+        <label>
+          Inicio
+          <input type="date" id="dataInicio">
+        </label>
+        <label>
+          Fim
+          <input type="date" id="dataFim">
+        </label>
+        <label>
+          Cliente
+          <input type="text" id="clienteFiltro" placeholder="Nome opcional">
+        </label>
+        <label>
+          Limite
+          <select id="limiteFiltro">
+            <option value="100">100</option>
+            <option value="200" selected>200</option>
+            <option value="500">500</option>
+            <option value="1000">1000</option>
+          </select>
+        </label>
+        <button id="buscarHistorico" type="button">Buscar</button>
       </div>
-    </div>
-   
-   
-       
-    <div class="bot-bar">
+    </section>
+
+    <section class="summary-bar">
+      <strong id="summaryTitle">Vendas recentes</strong>
+      <span id="summaryCount">0 registros</span>
+      <span id="summaryTotal"></span>
+    </section>
+
+    <section class="table-panel">
       <table id="tabela-historico">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Cliente</th>
-          <th>Descrição</th>
-          <th>Preço</th>
-          <th>Data da Venda</th>
-          <th>Método de Pagamento</th>
-          <th>Excluir</th>
-        </tr>
-      </thead>
-      
-      <tbody>
-        <!-- As linhas da tabela serão inseridas aqui -->
-      </tbody>
-    </table>
-  
-  
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
 
-
-  
-    <table id="tabela-historico-pagamentos">
-      <thead>
-        <tr>
-          <th>Nome do Pagador</th>
-          <th>Dívida Anterior</th>
-          <th>Valor Pago</th>
-          <th>Dívida Restante</th>
-          <th>Data</th>
-          <th>Excluir</th> <!-- Nova coluna para o botão de exclusão -->
-        </tr>
-      </thead>
-      <tbody>
-        <!-- As linhas da tabela serão inseridas aqui -->
-      </tbody>
-    </table>
-    
-    </div>
-  
-  </div>
-  
-   
   <script src="historico.js"></script>
-
 </body>
 </html>
-
-
-

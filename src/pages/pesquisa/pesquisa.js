@@ -1,386 +1,295 @@
-// Importa o módulo ipcRenderer do Electron
 const { ipcRenderer } = require('electron');
 
-function historico() {
-  // Obtém o termo de pesquisa do campo de entrada
-  var searchTerm = document.getElementById('search').value;
-  // Envia o termo de pesquisa para o processo principal para obter o histórico de vendas e pagamentos do cliente
-  ipcRenderer.send('historico-vendas', searchTerm);
-  ipcRenderer.send('historico-pagamentos', searchTerm);
+const searchInput = document.getElementById('search');
+const suggestions = document.getElementById('results');
+const clientList = document.getElementById('clientes-lista');
+const clientDetails = document.getElementById('results-dados');
+const emptyState = document.getElementById('empty-state');
+const historyBox = document.getElementById('historico-div');
+const paymentInput = document.getElementById('paymentValue');
+const paymentButton = document.getElementById('paymentButton');
+const paymentHint = document.getElementById('paymentHint');
+const historyButton = document.getElementById('historico');
+let selectedClient = null;
+
+function formatCurrency(value) {
+  return Number(value || 0).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  });
 }
 
-
-
-
-function verClientes() {
-  ipcRenderer.send('buscar-clientes');
-}
-
-ipcRenderer.on('clientes-dados', (event, clientes) => {
-  const modal = document.getElementById('modal');
-  const modalText = document.getElementById('modal-text');
-  modalText.innerHTML = `
-      <table>
-          <thead>
-              <tr>
-                  <th>ID</th>
-                  <th>Nome</th>
-                  <th>Data de Nascimento</th>
-                  <th>CPF</th>
-                  <th>RG</th>
-                  <th>Endereço</th>
-                  <th>Telefone</th>
-                  <th>Email</th>
-                  <th>Dívida</th>
-                  <th>Data de Pagamento</th>
-              </tr>
-          </thead>
-          <tbody>
-              ${clientes.map(cliente => `
-                  <tr>
-                      <td>${cliente.id}</td>
-                      <td>${cliente.nome}</td>
-                      <td>${cliente.DataNascimento}</td>
-                      <td>${cliente.cpf}</td>
-                      <td>${cliente.rg}</td>
-                      <td>${cliente.endereco}</td>
-                      <td>${cliente.telefone}</td>
-                      <td>${cliente.email}</td>
-                      <td>${cliente.divida}</td>
-                      <td>${cliente.dataPagamento}</td>
-                  </tr>
-              `).join('')}
-          </tbody>
-      </table>
-  `;
-  modal.style.display = 'block';
-});
-
-document.querySelector('.close-button').addEventListener('click', () => {
-  document.getElementById('modal').style.display = 'none';
-});
-
-
-
-ipcRenderer.on('historico-vendas-results', (event, rows) => {
-  var results = document.getElementById('historico-div');
-  results.innerHTML = '';
-
-  // Cria um novo elemento de título e adiciona ao início dos resultados de vendas
-  var tituloVendas = document.createElement('h2');
-  tituloVendas.textContent = 'Compras do Cliente';
-  results.appendChild(tituloVendas);
-
-  // Cria a tabela e o cabeçalho
-  var table = document.createElement('table');
-  var header = table.createTHead();
-  var row = header.insertRow(0);
-  var cell1 = row.insertCell(0);
-  var cell2 = row.insertCell(1);
-  var cell3 = row.insertCell(2);
-  cell1.innerHTML = "<b>Descrição da Venda</b>";
-  cell2.innerHTML = "<b>Preço</b>";
-  cell3.innerHTML = "<b>Data da Compra</b>"; 
-
- // Adiciona os dados à tabela
-for (var i = rows.length - 1; i >= 0; i--) {
-  var row = table.insertRow(-1);
-  var cell1 = row.insertCell(0);
-  var cell2 = row.insertCell(1);
-  var cell3 = row.insertCell(2);
-  cell1.textContent = rows[i].descricao;
-  cell2.textContent = 'R$ ' + rows[i].preco.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-  var dataCompra = new Date(rows[i].dataVenda); // Usa dataVenda em vez de data_compra
-  var dia = dataCompra.getUTCDate(); // Usa getUTCDate em vez de getDate
-  var mes = dataCompra.getUTCMonth() + 1; // Usa getUTCMonth em vez de getMonth
-  var ano = dataCompra.getUTCFullYear(); // Usa getUTCFullYear em vez de getFullYear
-  cell3.textContent = dia + '/' + mes + '/' + ano; // Adiciona a data da compra
-}
-
-
-  // Adiciona a tabela aos resultados
-  results.appendChild(table);
-
-  // Torna a div visível
-  results.style.display = 'block';
-});
-
-document.addEventListener('click', function(event) {
-  var historicoDiv = document.getElementById('historico-div');
-  var isClickInside = historicoDiv.contains(event.target);
-
-  if (!isClickInside) {
-    // O usuário clicou fora da div, esconde a div
-    historicoDiv.style.display = 'none';
-  }
-});
-
-ipcRenderer.on('historico-pagamentos-results', (event, rows) => {
-  var results = document.getElementById('historico-div');
-
-  // Cria um novo elemento de título e adiciona ao início dos resultados de pagamentos
-  var tituloPagamentos = document.createElement('h2');
-  tituloPagamentos.textContent = 'Pagamentos Feitos pelo Cliente';
-  results.appendChild(tituloPagamentos);
-
-  // Cria a tabela e o cabeçalho
-  var table = document.createElement('table');
-  var header = table.createTHead();
-  var row = header.insertRow(0);
-  var cell1 = row.insertCell(0);
-  var cell2 = row.insertCell(1);
-  var cell3 = row.insertCell(2);
-  var cell4 = row.insertCell(3);
-  var cell5 = row.insertCell(4); // Adiciona a coluna para a descrição do pagamento
-  cell1.innerHTML = "<b>Valor Pago</b>";
-  cell2.innerHTML = "<b>Dívida Anterior</b>";
-  cell3.innerHTML = "<b>Dívida Restante</b>";
-  cell4.innerHTML = "<b>Data de Pagamento</b>";
-  cell5.innerHTML = "<b>Descrição</b>"; 
-
-  // Adiciona os dados à tabela
-  for (var i = rows.length - 1; i >= 0; i--) {
-      var row = table.insertRow(-1);
-      var cell1 = row.insertCell(0);
-      var cell2 = row.insertCell(1);
-      var cell3 = row.insertCell(2);
-      var cell4 = row.insertCell(3);
-      var cell5 = row.insertCell(4); // Adiciona a célula para a descrição do pagamento
-      cell1.textContent = 'R$ ' + rows[i].valor_pago.toLocaleString('pt-BR', {minimumFractionDigits: 2}); // Formata o valor pago
-      cell2.textContent = 'R$ ' + rows[i].divida_anterior.toLocaleString('pt-BR', {minimumFractionDigits: 2}); // Formata a dívida anterior
-      cell3.textContent = 'R$ ' + rows[i].divida_restante.toLocaleString('pt-BR', {minimumFractionDigits: 2}); // Formata a dívida restante
-      var dataPagamento = new Date(rows[i].data_pagamento);
-      var dia = dataPagamento.getUTCDate();
-      var mes = dataPagamento.getUTCMonth() + 1;
-      var ano = dataPagamento.getUTCFullYear();
-      cell4.textContent = dia + '/' + mes + '/' + ano;
-
+function formatDate(value) {
+  if (!value) {
+    return '-';
   }
 
-  // Adiciona a tabela aos resultados
-  results.appendChild(table);
-
-  // Torna a div visível
-  results.style.display = 'block';
-});
-
-// Função para lidar com a funcionalidade de auto-completar
-function autocomplete() {
-    // Obtém o termo de pesquisa do campo de entrada
-    var searchTerm = document.getElementById('search').value;
-    // Se o termo de pesquisa estiver vazio, limpa os resultados e retorna
-    if (searchTerm === '') {
-        document.getElementById('results').innerHTML = '';
-        return;
-    }
-    // Envia o termo de pesquisa para o processo principal para obter os resultados de auto-completar
-    ipcRenderer.send('autocomplete-pesquisa', searchTerm);
+  const date = new Date(`${value}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString('pt-BR');
 }
 
-// Quando a janela é carregada, adiciona os ouvintes de eventos
-window.onload = function() {
-    // Obtém o campo de entrada de pesquisa
-    var searchInput = document.getElementById('search');
-    // Adiciona um ouvinte de evento para chamar a função de auto-completar sempre que o valor do campo de entrada muda
-    searchInput.addEventListener('input', autocomplete);
-    // Adiciona um ouvinte de evento para chamar a função de pesquisa quando o botão "Pesquisar" é clicado
-    document.getElementById('pesquisar').addEventListener('click', search);
-}
-
-// Função para lidar com a funcionalidade de pesquisa
-function search() { 
-    // Obtém o termo de pesquisa do campo de entrada
-    var searchTerm = document.getElementById('search').value;
-    // Envia o termo de pesquisa para o processo principal para obter os resultados da pesquisa
-    ipcRenderer.send('search', searchTerm);
-}
-
-// Ouvinte de evento para lidar com os resultados de auto-completar
-ipcRenderer.on('autocomplete-results', (event, rows) => {
-    // Obtém o elemento de resultados
-    var results = document.getElementById('results');
-    // Limpa os resultados existentes
-    results.innerHTML = '';
-    // Itera sobre os resultados de auto-completar
-    for (var i = 0; i < rows.length; i++) {
-        // Cria um novo elemento para cada resultado
-        var result = document.createElement('div');
-        // Define o texto do elemento para o nome do resultado
-        result.textContent = rows[i].nome;
-        // Adiciona um ouvinte de evento para preencher o campo de entrada com o nome quando o resultado é clicado
-        result.addEventListener('click', function() {
-            document.getElementById('search').value = this.textContent;
-        });
-        // Adiciona o elemento de resultado ao elemento de resultados
-        results.appendChild(result);
-    }
-});
-
-function criarCallbackPagamento(row, pagamento) {
-  return function() {
-    var valorPagamento = parseFloat(pagamento.value);
-    var dividaAnterior = row.divida;
-    
-    if (isNaN(valorPagamento) || valorPagamento <= 0) {
-      showModal('Por favor, insira um valor de pagamento válido.');
-      return;
-    }
-    
-    // Verifica se o valor do pagamento é maior do que a dívida
-    if (valorPagamento > dividaAnterior) {
-      showModal('O valor do pagamento não pode ser maior do que a dívida.');
-      return;
-    }
-    
-    var dividaRestante = dividaAnterior - valorPagamento;
-    var nomePagador = row.nome;
-
-
-    // Obtém a data atual no formato 'DD/MM/YYYY'
-var dataPagamento = new Date().toLocaleDateString('pt-BR');
-
-
-    // Envia um evento IPC com os detalhes do pagamento
-    ipcRenderer.send('registrar-pagamento', { nomePagador, dividaAnterior, valorPagamento, dividaRestante, dataPagamento });
-
-    // Exibe uma mensagem de sucesso
-    showModal('Pagamento Efetuado');
-
-    // Limpa o campo de entrada
-    pagamento.value = '';
-  };
-}
-
-
-// Função para exibir a janela modal
-function showModal(message) {
-  const modal = document.getElementById('modal');
-  const span = document.getElementsByClassName('close-button')[0];
+function showModalMessage(message) {
   document.getElementById('modal-text').textContent = message;
-  modal.style.display = 'block';
-  span.onclick = function() {
-    modal.style.display = 'none';
-  }
-  window.onclick = function(event) {
-    if (event.target == modal) {
-      modal.style.display = 'none';
-    }
-  }
+  document.getElementById('modal').style.display = 'block';
 }
 
-  
-    //ouvinte para mostrar os dados do cliente
-ipcRenderer.on('search-results', (event, rows) => {
-    var results = document.getElementById('results-dados');
-    results.innerHTML = '';
+function hideModal() {
+  document.getElementById('modal').style.display = 'none';
+}
 
-    for (var i = 0; i < rows.length; i++) {
-        var result = document.createElement('div');
+function createField(label, value) {
+  const field = document.createElement('div');
+  field.className = 'field';
 
-         // Cria um novo elemento de título e adiciona ao início do resultado
-        var titulo = document.createElement('h2');
-        titulo.textContent = 'Dados do Cliente';
-        result.appendChild(titulo);
+  const title = document.createElement('span');
+  title.textContent = label;
 
-        // Cria um novo elemento para cada campo do resultado
-        var nome = document.createElement('p');
-        nome.textContent = 'Nome: ' + rows[i].nome;
-        nome.className = 'field'; // Adiciona uma classe ao elemento do campo
-        result.appendChild(nome);
+  const content = document.createElement('strong');
+  content.textContent = value || '-';
 
-        var dataNascimento = document.createElement('p');
-        var data = new Date(rows[i].DataNascimento + 'T00:00:00');
-        var dia = ("0" + data.getDate()).slice(-2); // Adiciona um zero à esquerda se o dia for menor que 10
-        var mes = ("0" + (data.getMonth() + 1)).slice(-2); // Adiciona um zero à esquerda se o mês for menor que 10
-        var ano = data.getFullYear();
-        dataNascimento.textContent = 'Data de Nascimento: ' + dia + '/' + mes + '/' + ano;
-        dataNascimento.className = 'field'; // Adiciona uma classe ao elemento do campo
-        result.appendChild(dataNascimento);
-        
+  field.append(title, content);
+  return field;
+}
 
-        var cpf = document.createElement('p');
-        cpf.textContent = 'CPF: ' + rows[i].cpf;
-        cpf.className = 'field'; // Adiciona uma classe ao elemento do campo
-        result.appendChild(cpf);
+function setClientActions(cliente) {
+  const debt = Number(cliente.divida || 0);
+  paymentInput.disabled = debt <= 0;
+  paymentButton.disabled = debt <= 0;
+  historyButton.disabled = false;
+  paymentHint.textContent = debt > 0
+    ? `Divida atual: ${formatCurrency(debt)}`
+    : 'Este cliente nao possui divida aberta.';
+}
 
-        var rg = document.createElement('p');
-        rg.textContent = 'RG: ' + rows[i].rg;
-        rg.className = 'field'; // Adiciona uma classe ao elemento do campo
-        result.appendChild(rg);
+function renderClient(cliente) {
+  selectedClient = cliente;
+  emptyState.style.display = 'none';
+  clientDetails.innerHTML = '';
 
-        var endereco = document.createElement('p');
-        endereco.textContent = 'Endereço: ' + rows[i].endereco;
-        endereco.className = 'field'; // Adiciona uma classe ao elemento do campo
-        result.appendChild(endereco);
+  const card = document.createElement('div');
+  card.className = 'client-card';
 
-        var telefone = document.createElement('p');
-        telefone.textContent = 'Telefone: ' + rows[i].telefone;
-        telefone.className = 'field'; // Adiciona uma classe ao elemento do campo
-        result.appendChild(telefone);
+  const title = document.createElement('h2');
+  title.textContent = cliente.nome;
+  card.appendChild(title);
 
-        var email = document.createElement('p');
-        email.textContent = 'Email: ' + rows[i].email;
-        email.className = 'field'; // Adiciona uma classe ao elemento do campo
-        result.appendChild(email);
+  const grid = document.createElement('div');
+  grid.className = 'field-grid';
+  grid.append(
+    createField('Nascimento', formatDate(cliente.DataNascimento)),
+    createField('CPF', cliente.cpf),
+    createField('RG', cliente.rg),
+    createField('Endereco', cliente.endereco),
+    createField('Telefone', cliente.telefone),
+    createField('Email', cliente.email),
+    createField('Divida atual', formatCurrency(cliente.divida)),
+    createField('Ultimo pagamento', formatDate(cliente.dataPagamento)),
+  );
+  card.appendChild(grid);
 
-        
-        var divida = document.createElement('p');
-        divida.textContent = 'Dívida Atual: ' + rows[i].divida;
-        divida.className = 'field';
-        result.appendChild(divida);
+  const removeButton = document.createElement('button');
+  removeButton.type = 'button';
+  removeButton.className = 'danger-button';
+  removeButton.textContent = 'Inativar cliente';
+  removeButton.addEventListener('click', async () => {
+    const result = await ipcRenderer.invoke('clientes:delete', cliente.id);
+    if (result.deleted) {
+      selectedClient = null;
+      clientDetails.innerHTML = '';
+      emptyState.style.display = 'flex';
+      searchInput.value = '';
+      historyBox.innerHTML = '';
+      setClientActions({ divida: 0 });
+      historyButton.disabled = true;
+      showModalMessage('Cliente inativado.');
+    }
+  });
+  card.appendChild(removeButton);
 
-        var DataPagamento = document.createElement('p');
-        var data = new Date(rows[i].dataPagamento + 'T00:00:00');
-        var dia = ("0" + data.getDate()).slice(-2); // Adiciona um zero à esquerda se o dia for menor que 10
-        var mes = ("0" + (data.getMonth() + 1)).slice(-2); // Adiciona um zero à esquerda se o mês for menor que 10
-        var ano = data.getFullYear();
-        DataPagamento.textContent = 'Data de Pagamento: ' + dia + '/' + mes + '/' + ano;
-        DataPagamento.className = 'field';
-        result.appendChild(DataPagamento);
+  clientDetails.appendChild(card);
+  setClientActions(cliente);
+  loadHistory().catch(console.error);
+}
 
-
-        var titoloPagamento = document.createElement('h2');
-        titoloPagamento.textContent = 'Pagamento do Cliente';
-        result.appendChild(titoloPagamento);
-       
-        var pagamento = document.createElement('input');
-        pagamento.type = 'number';
-        pagamento.placeholder = 'Valor do pagamento';
-        result.appendChild(pagamento);
-
-        var botaoPagamento = document.createElement('button');
-        botaoPagamento.textContent = 'Pagar';
-        result.appendChild(botaoPagamento);
-
-        botaoPagamento.addEventListener('click', criarCallbackPagamento(rows[i], pagamento));
-        // Adiciona o elemento de resultado ao elemento de resultados
-        results.appendChild(result);
-
-        //botao que remover o cliente do banco de dados
-
-        for (var i = 0; i < rows.length; i++) {
-          var botaoRemover = document.createElement('button');
-          botaoRemover.className = 'ButomDeletDadosCliente'
-          botaoRemover.textContent = 'Remover';
-          botaoRemover.dataset.id = rows[i].id;
-          result.appendChild(botaoRemover);
-      
-          botaoRemover.addEventListener('click', function(e) {
-            var idCliente = this.dataset.id;
-            ipcRenderer.send('confirm-remove-cliente', idCliente);
-            console.log(idCliente)
-        });
-        
-        ipcRenderer.on('cliente-removido', (event, idCliente) => {
-          console.log('Cliente removido:', idCliente);
-          location.reload(); // Atualiza a página
-        });
-        
-      }
-      
-      
+async function selectClientByName(nome) {
+  const cliente = await ipcRenderer.invoke('clientes:get-by-name', nome);
+  if (!cliente) {
+    showModalMessage('Cliente nao encontrado.');
+    return;
   }
 
+  searchInput.value = cliente.nome;
+  suggestions.innerHTML = '';
+  renderClient(cliente);
+}
 
+async function autocomplete() {
+  const searchTerm = searchInput.value.trim();
+  suggestions.innerHTML = '';
 
+  if (!searchTerm) {
+    return;
+  }
+
+  const clientes = await ipcRenderer.invoke('clientes:autocomplete', searchTerm, 10);
+  clientes.forEach((cliente) => {
+    const item = document.createElement('div');
+    item.textContent = cliente.nome;
+    item.addEventListener('click', () => {
+      selectClientByName(cliente.nome).catch(console.error);
+    });
+    suggestions.appendChild(item);
+  });
+}
+
+async function search() {
+  const searchTerm = searchInput.value.trim();
+  if (!searchTerm) {
+    showModalMessage('Digite o nome do cliente.');
+    return;
+  }
+
+  await selectClientByName(searchTerm);
+}
+
+function renderClientList(clientes) {
+  clientList.innerHTML = '';
+  clientes.forEach((cliente) => {
+    const item = document.createElement('div');
+    item.className = 'client-item';
+    const name = document.createElement('strong');
+    name.textContent = cliente.nome;
+    const meta = document.createElement('span');
+    meta.textContent = `${cliente.telefone || 'sem telefone'} | divida ${formatCurrency(cliente.divida)}`;
+    item.append(name, meta);
+    item.addEventListener('click', () => {
+      selectClientByName(cliente.nome).catch(console.error);
+    });
+    clientList.appendChild(item);
+  });
+}
+
+async function showClientes() {
+  const clientes = await ipcRenderer.invoke('clientes:list');
+  renderClientList(clientes);
+}
+
+function renderHistoryGroup(title, rows, formatter) {
+  const group = document.createElement('div');
+  group.className = 'history-group';
+  const heading = document.createElement('h3');
+  heading.textContent = title;
+  group.appendChild(heading);
+
+  if (rows.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'history-row';
+    empty.textContent = 'Nenhum registro.';
+    group.appendChild(empty);
+    return group;
+  }
+
+  rows.slice(0, 20).forEach((row) => {
+    const item = document.createElement('div');
+    item.className = 'history-row';
+    item.textContent = formatter(row);
+    group.appendChild(item);
+  });
+
+  return group;
+}
+
+async function loadHistory() {
+  historyBox.innerHTML = '';
+  if (!selectedClient) {
+    return;
+  }
+
+  const [vendas, pagamentos] = await Promise.all([
+    ipcRenderer.invoke('vendas:list-by-cliente', selectedClient.nome),
+    ipcRenderer.invoke('pagamentos:list-by-cliente', selectedClient.nome),
+  ]);
+
+  historyBox.appendChild(renderHistoryGroup('Compras', vendas, (venda) => (
+    `${formatDate(venda.dataVenda)} | ${formatCurrency(venda.preco)} | ${venda.metodoPagamento}\n${venda.descricao || ''}`
+  )));
+  historyBox.appendChild(renderHistoryGroup('Pagamentos', pagamentos, (pagamento) => (
+    `${formatDate(pagamento.data_pagamento)} | pago ${formatCurrency(pagamento.valor_pago)} | restante ${formatCurrency(pagamento.divida_restante)}`
+  )));
+}
+
+async function registerPayment() {
+  if (!selectedClient) {
+    return;
+  }
+
+  const valorPagamento = Number(paymentInput.value);
+  const dividaAnterior = Number(selectedClient.divida || 0);
+
+  if (!Number.isFinite(valorPagamento) || valorPagamento <= 0) {
+    showModalMessage('Insira um valor de pagamento valido.');
+    return;
+  }
+
+  if (valorPagamento > dividaAnterior) {
+    showModalMessage('O pagamento nao pode ser maior que a divida.');
+    return;
+  }
+
+  const result = await ipcRenderer.invoke('pagamentos:create', {
+    nomePagador: selectedClient.nome,
+    dividaAnterior,
+    valorPagamento,
+  });
+
+  if (result && result.cancelled) {
+    showModalMessage('Pagamento cancelado antes de registrar.');
+    return;
+  }
+
+  paymentInput.value = '';
+  await selectClientByName(selectedClient.nome);
+  showModalMessage('Pagamento registrado.');
+}
+
+searchInput.addEventListener('input', () => {
+  autocomplete().catch((err) => {
+    console.error(err);
+    showModalMessage('Nao foi possivel buscar clientes.');
+  });
+});
+
+document.getElementById('pesquisar').addEventListener('click', () => {
+  search().catch((err) => {
+    console.error(err);
+    showModalMessage('Nao foi possivel pesquisar.');
+  });
+});
+
+document.getElementById('verClientes').addEventListener('click', () => {
+  showClientes().catch((err) => {
+    console.error(err);
+    showModalMessage('Nao foi possivel carregar clientes.');
+  });
+});
+
+paymentButton.addEventListener('click', () => {
+  registerPayment().catch((err) => {
+    console.error(err);
+    showModalMessage('Nao foi possivel registrar pagamento.');
+  });
+});
+
+historyButton.addEventListener('click', () => {
+  loadHistory().catch((err) => {
+    console.error(err);
+    showModalMessage('Nao foi possivel carregar historico.');
+  });
+});
+
+document.querySelector('.close-button').addEventListener('click', hideModal);
+window.addEventListener('click', (event) => {
+  if (event.target === document.getElementById('modal')) {
+    hideModal();
+  }
 });
