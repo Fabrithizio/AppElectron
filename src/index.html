@@ -1,74 +1,120 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <!-- Define o tipo de conteúdo e o conjunto de caracteres -->
-  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
-  <!-- Define o título da página -->
-  <title>Controle De Estoque</title>
-  <!-- Link para o arquivo CSS externo -->
+  <meta charset="UTF-8">
+  <title>Controle de Estoque</title>
+  <link rel="stylesheet" href="styles/base.css">
   <link rel="stylesheet" href="index.css">
 </head>
 <body>
+  <section id="loginGate" class="login-gate">
+    <form id="loginForm" class="login-box">
+      <h1>Entrar no sistema</h1>
+      <p>Escolha o perfil, informe a senha ou PIN e entre. O acesso administrativo libera financeiro, auditoria e configuracoes.</p>
+      <label>
+        Perfil
+        <select id="loginUser" autocomplete="username">
+          <option value="funcionario">Funcionario</option>
+          <option value="admin">Administrador</option>
+        </select>
+      </label>
+      <label>
+        Senha / PIN
+        <input type="password" id="loginPassword" value="0000" autocomplete="current-password">
+      </label>
+      <div class="login-actions">
+        <button type="submit">Entrar</button>
+        <button type="button" id="ownerLoginShortcut">Administrador</button>
+      </div>
+      <p id="loginMessage" class="login-message"></p>
+    </form>
+  </section>
 
-<!-- Barra de navegação -->
-<div class="container">
-   <!-- Logo da empresa -->
-   <img src="imgs/logo-nice.png" alt="logo" class="logo"> 
-   <!-- Título da página -->
-   <h1>Controle de Estoque</h1>
-
-   <!-- Barra de atalhos -->
-   <div class="hotbar">
-    <ul>
-      <!-- Ícones de atalho -->
-      <li><img id="whatsapp-icon"  src="imgs/whatspp.png" alt="whatsApp"></li>
-      <a href="pages/contabilidade/faturamento.html"><li><img src="imgs/faturamento.png" alt="instagram" ></li></a>
-      
-
-      <li id="pagamentos" ><img src="imgs/pagamentos.png"  alt="faturamento"></li>
-   </ul>
-   </div>
-</div>
-
-<!-- Conteúdo principal e suas 4 opções -->
-<main>
-  <!-- Primeira linha de opções -->
-  <div class="row_opition">
-    <!-- Opção de realizar vendas -->
-    <div class="option">
-      <a href="pages/vendas/vendas.html" class="links">
-        <img src="imgs/vedas.png" alt="vendas" class="config_img">
-        <p><strong>Realizar vendas</strong></p>
-      </a>
+  <header class="app-header">
+    <div class="brand">
+      <img id="companyLogo" src="assets/imgs/logo-nice.png" alt="logo" class="logo">
+      <div>
+        <p id="companyName" class="company-name">Nice Modas & Artigos</p>
+        <h1 id="appTitle">Controle de Estoque</h1>
+      </div>
     </div>
-    <!-- Opção de pesquisa -->
-    <div class="option">
-      <a href="pages/pesquisa/pesquisa.html" class="links">
-        <img src="imgs/pesquisa.png" alt="produtos" class="config_img">
-        <p><strong>Pesquisar</strong></p>
-      </a>
-    </div>
-  </div>
 
-  <!-- Segunda linha de opções -->
-  <div class="row_opition">
-    <!-- Opção de cadastro de clientes -->
-    <div class="option">
-      <a href="pages/clientes/cliente.html" class="links">
-        <img src="imgs/cliente.png" alt="cliente" class="config_img">
-        <p><strong>Cadastra Cliente</strong></p>
+    <nav class="top-actions" aria-label="atalhos">
+      <button id="whatsappButton" type="button" title="Abrir WhatsApp">
+        <img src="assets/imgs/whatspp.png" alt="">
+        <span>WhatsApp</span>
+      </button>
+      <button id="ownerAreaButton" type="button" title="Abrir area administrativa">
+        <img src="assets/imgs/faturamento.png" alt="">
+        <span>Administracao</span>
+      </button>
+      <button id="paymentsButton" type="button" title="Verificar pagamentos">
+        <img src="assets/imgs/pagamentos.png" alt="">
+        <span>Pagamentos</span>
+      </button>
+      <span id="sessionBadge" class="session-badge">Sem login</span>
+      <button id="logoutButton" type="button" title="Sair do sistema">
+        <span>Sair</span>
+      </button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="dashboard" aria-label="resumo operacional">
+      <article>
+        <span>Vendas hoje</span>
+        <strong id="salesCountValue">0</strong>
+        <small id="salesCount">0 vendas</small>
+      </article>
+      <article>
+        <span>Clientes no fiado</span>
+        <strong id="debtClientsValue">0</strong>
+        <small id="debtClients">0 clientes</small>
+      </article>
+      <article>
+        <span>Atrasos</span>
+        <strong id="lateClients">0</strong>
+        <small>clientes para cobrar</small>
+      </article>
+    </section>
+
+    <section class="quick-actions" aria-label="acoes principais">
+      <a class="action-card" data-module="manualSales" href="pages/vendas/vendas.html">
+        <img src="assets/imgs/vedas.png" alt="">
+        <span>Realizar vendas</span>
       </a>
-    </div>
-    <!-- Opção de histórico -->
-    <div class="option">
-      <a href="pages/historico/historico.html" class="links">
-        <img src="imgs/historico.png" alt="historio" class="config_img">
-        <p><strong>Histórico</strong></p>
+
+      <a class="action-card" data-module="clients" href="pages/pesquisa/pesquisa.html">
+        <img src="assets/imgs/pesquisa.png" alt="">
+        <span>Pesquisar</span>
       </a>
-    </div>
-    <button id="backupButton" type="button">Realizar Backup</button>
-  </div>
-  <div id="whatsapp-web"></div>
-</main>
-<script src="index.js"></script>
-</body> 
+
+      <a class="action-card" data-module="clients" href="pages/clientes/cliente.html">
+        <img src="assets/imgs/cliente.png" alt="">
+        <span>Cadastrar Cliente</span>
+      </a>
+
+      <a class="action-card" data-module="simpleProducts" href="pages/produtos/produtos.html">
+        <img src="assets/imgs/produto.png" alt="">
+        <span>Produtos</span>
+      </a>
+
+      <a class="action-card" data-module="payments" href="pages/historico/historico.html">
+        <img src="assets/imgs/historico.png" alt="">
+        <span>Historico</span>
+      </a>
+    </section>
+
+    <section class="mode-panel">
+      <div>
+        <span class="eyebrow">Modo atual <button type="button" class="help-tip" title="Venda simples aceita itens digitados livremente. Catalogo permite buscar produtos cadastrados. Estoque controlado baixa quantidade e bloqueia venda sem estoque.">?</button></span>
+        <strong id="businessLevel">Venda simples</strong>
+        <p id="businessDescription">Venda manual livre para lojas sem estoque repetido.</p>
+      </div>
+      <button id="backupButton" type="button">Realizar Backup</button>
+    </section>
+  </main>
+
+  <script src="renderer/home.js"></script>
+</body>
+</html>

@@ -3,76 +3,112 @@
 <head>
   <meta charset="UTF-8">
   <title>Registro de Vendas</title>
+  <link rel="stylesheet" href="../../styles/base.css">
   <link rel="stylesheet" href="vendas_style.css">
 </head>
 <body>
-  
-<main>
-
-  <div class="container">
-
-    <form id="vendaForm">
-
+  <header class="page-header">
+    <a href="../../index.html"><img src="../../assets/imgs/voltar.png" alt="voltar"></a>
+    <div>
       <h1>Realizar Venda</h1>
-      
-      
-      <input type="text" id="cliente" name="cliente" placeholder="Cliente">
-      <div class="container-auto-complete">
-        <div id="autocomplete-list"></div>
-      </div>
-      
-      <div id="itensDiv">
-        <label for="itens">Itens:</label>
-        <div id="itens">
-          <div class="item">
-            <input type="text" class="item-nome" placeholder="Nome do item">
-            <input type="number" class="item-quantidade" placeholder="Quantidade">
-            <input type="number" class="item-valor" placeholder="Valor" step="0.01">
-            <button type="button" class="adicionarItem , addRemover">Adicionar</button>
-            
-          </div>
+      <p>Venda manual livre, com catalogo opcional quando houver produto cadastrado.</p>
+    </div>
+  </header>
+
+  <main>
+    <form id="vendaForm" class="sale-layout">
+      <section class="sale-panel">
+        <h2>Cliente</h2>
+        <div class="field-group autocomplete-wrap">
+          <label for="cliente">Nome do cliente</label>
+          <input type="text" id="cliente" name="cliente" placeholder="Digite ou escolha um cliente" autocomplete="off">
+          <div id="autocomplete-list"></div>
         </div>
-      </div>
 
-      <label for="pagamento">Método de Pagamento:</label>
-      <select id="metodo_pagamento" name="metodo_pagamento" class="select" required>
-        <option value="Fiado">Á prazo</option>
-        <option value="Pix">Pix</option>
-        <option value="Especie">Especie</option>
-        <option value="Debito">Cartão Debito</option>
-        <option value="Credito">Cartão Credito</option>
-      </select>
-      
-      <textarea id="descricao" name="descricao" cols="10" rows="25" readonly></textarea>
-      <button type="button" class="removerItem , addRemover">Remover</button>
+        <h2>Adicionar item</h2>
+        <section class="product-picker">
+          <div class="picker-header">
+            <h3>Produtos cadastrados</h3>
+            <input type="text" id="produtoBuscaRapida" placeholder="Buscar por nome, categoria ou codigo">
+          </div>
+          <div id="produtosRapidos" class="quick-products"></div>
+        </section>
+        <div class="barcode-row">
+          <div class="field-group">
+            <label for="codigoBarras">Codigo de barras</label>
+            <input type="text" id="codigoBarras" placeholder="Passe o leitor ou digite o codigo">
+          </div>
+          <button type="button" id="buscarCodigo">Adicionar por codigo</button>
+          <button type="button" class="help-tip" title="Leitores USB normalmente funcionam como teclado: clique no campo, passe o laser e pressione Enter se o leitor nao fizer isso sozinho.">?</button>
+        </div>
+        <div class="item-grid">
+          <div class="field-group autocomplete-wrap item-name-field">
+            <label for="itemNome">Item</label>
+            <input type="text" id="itemNome" class="item-nome" placeholder="Produto cadastrado ou item livre">
+            <div id="produto-list"></div>
+          </div>
+          <div class="field-group">
+            <label for="itemQuantidade">Qtd.</label>
+            <input type="number" id="itemQuantidade" class="item-quantidade" min="1" placeholder="1">
+          </div>
+          <div class="field-group">
+            <label for="itemValor">Valor un.</label>
+            <input type="number" id="itemValor" class="item-valor" step="0.01" min="0" placeholder="0,00">
+          </div>
+          <button type="button" class="adicionarItem">Adicionar</button>
+        </div>
 
-      <label for="preco">Valor Total:</label>
-      <input type="number" id="preco" name="preco" step="0.01">
+        <section class="items-list">
+          <div class="items-header">
+            <h2>Itens da venda</h2>
+            <button type="button" class="removerItem">Remover ultimo</button>
+          </div>
+          <table id="itensTabela">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Qtd.</th>
+                <th>Unit.</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <textarea id="descricao" name="descricao" readonly hidden></textarea>
+        </section>
+      </section>
 
-      <input type="submit" value="Realizar Venda" id="vender" >
+      <aside class="checkout-panel">
+        <h2>Pagamento</h2>
+        <label for="metodo_pagamento">Metodo</label>
+        <select id="metodo_pagamento" name="metodo_pagamento" required>
+          <option value="Fiado">A prazo</option>
+          <option value="Pix">Pix</option>
+          <option value="Especie">Especie</option>
+          <option value="Debito">Cartao Debito</option>
+          <option value="Credito">Cartao Credito</option>
+        </select>
 
-      <div class="home">
-        <a href="../../index.html"  ><img src="../../imgs/voltar.png" alt="voltar" ></a>
-      </div>
-    
+        <div class="total-box">
+          <span>Total</span>
+          <strong id="totalVendaTexto">R$ 0,00</strong>
+          <input type="number" id="preco" name="preco" step="0.01" readonly hidden>
+        </div>
+
+        <input type="submit" value="Finalizar Venda" id="vender">
+        <p class="hint">Venda fiada aumenta a divida do cliente automaticamente.</p>
+        <p class="hint">Produtos com estoque controlado nao permitem vender quantidade maior que a disponivel.</p>
+      </aside>
     </form>
+
     <div id="modal" class="modal">
       <div class="modal-content">
-        <span class="close-button">×</span>
+        <span class="close-button">x</span>
         <p id="modal-text"></p>
       </div>
     </div>
-    
+  </main>
 
-  </div>
-
-  
-</main>
-
-  
-
-<script src="vendas.js"></script>
-<script src="../../renderer.js"></script>
-
+  <script src="vendas.js"></script>
 </body>
 </html>

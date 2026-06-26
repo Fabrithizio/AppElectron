@@ -1,30 +1,179 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-  <title>Total de Vendas</title>
-  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+  <meta charset="UTF-8">
+  <title>Administracao</title>
+  <link rel="stylesheet" href="../../styles/base.css">
   <link rel="stylesheet" href="faturamento.css">
 </head>
 <body>
-<header> 
-  <a href="../../index.html"><img src="../../imgs/voltar.png" alt="voltar" width="55px" class="voltar"></a>
-  <h1>Finanças</h1>
-</header>
+  <header>
+    <a href="../../index.html"><img src="../../assets/imgs/voltar.png" alt="voltar" width="55" class="voltar"></a>
+    <h1>Administracao</h1>
+    <button id="logoutButton" type="button" style="display: none;">Sair</button>
+  </header>
 
-<div class="filtro">
-  <label class="filtorData" for="dataInicio"><strong>Início:</strong></label>
-  <input class="filtorData" type="date" id="dataInicio" name="dataInicio">
-  <label class="filtorData" for="dataFim"><strong>Fim:</strong></label>
-  <input class="filtorData" type="date" id="dataFim" name="dataFim">
-  <button onclick="buscarDados()" class="buscar">Buscar</button>
-</div>
+  <section id="loginPanel" class="login-panel">
+    <h2>Acesso restrito</h2>
+    <p>Entre como administrador para ver financeiro, auditoria, saidas e configuracoes.</p>
+    <div class="login-row">
+      <select id="ownerUser" autocomplete="username">
+        <option value="admin">Administrador</option>
+      </select>
+      <input type="password" id="ownerPassword" placeholder="Senha" autocomplete="current-password">
+      <button id="loginButton" type="button">Entrar</button>
+    </div>
+    <p id="loginError" class="login-error"></p>
+  </section>
 
-<div class="container">
-  <div id="baloes" class="left-column"></div>
-  <div class="right-column">
-    <div id="totalIntervaloPagamentos" class="balao total" style="display: none;"></div>
-  </div>
-</div>
+  <section id="ownerContent" style="display: none;">
+    <nav class="owner-tabs">
+      <button type="button" class="owner-tab active" data-target="overviewSection">Visao geral</button>
+      <button type="button" class="owner-tab" data-target="expensesSection">Saidas</button>
+      <button type="button" class="owner-tab" data-target="auditSection">Auditoria</button>
+      <button type="button" class="owner-tab" data-target="usersSection">Usuarios</button>
+      <button type="button" class="owner-tab" data-target="settingsSection">Configuracoes</button>
+    </nav>
+
+    <section id="overviewSection" class="owner-section">
+    <div class="filtro">
+      <label class="filtorData" for="dataInicio"><strong>Inicio:</strong></label>
+      <input class="filtorData" type="date" id="dataInicio" name="dataInicio">
+      <label class="filtorData" for="dataFim"><strong>Fim:</strong></label>
+      <input class="filtorData" type="date" id="dataFim" name="dataFim">
+      <button type="button" class="buscar">Buscar</button>
+    </div>
+
+    <div class="container">
+      <div id="baloes" class="left-column"></div>
+      <div class="right-column">
+        <div id="totalIntervaloPagamentos" class="balao total" style="display: none;"></div>
+      </div>
+    </div>
+    </section>
+
+    <section id="expensesSection" class="despesas-panel owner-section" style="display: none;">
+      <h2>Saidas do periodo <button type="button" class="help-tip" title="Registre despesas/saidas de dinheiro. Se errar, cancele: o registro fica guardado na auditoria e sai dos totais.">?</button></h2>
+      <form id="despesaForm">
+        <input type="text" id="despesaDescricao" placeholder="Descricao da despesa" required>
+        <input type="number" id="despesaValor" placeholder="Valor" step="0.01" min="0" required>
+        <input type="date" id="despesaData" required>
+        <input type="text" id="despesaCategoria" placeholder="Categoria">
+        <button type="submit">Registrar saida</button>
+      </form>
+      <table id="tabelaDespesas">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Descricao</th>
+            <th>Categoria</th>
+            <th>Valor</th>
+            <th>Cancelar</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="auditSection" class="audit-panel owner-section" style="display: none;">
+      <h2>Auditoria <button type="button" class="help-tip" title="Mostra a trilha de acoes importantes: vendas, pagamentos, cancelamentos, despesas e alteracoes. Use filtros para investigar erros.">?</button></h2>
+      <div class="audit-filters">
+        <input type="date" id="auditInicio">
+        <input type="date" id="auditFim">
+        <input type="text" id="auditUsuario" placeholder="Usuario">
+        <input type="text" id="auditAcao" placeholder="Acao">
+        <select id="auditEntidade">
+          <option value="">Todas as areas</option>
+          <option value="vendas">Vendas</option>
+          <option value="Pagamentos">Pagamentos</option>
+          <option value="Despesas">Despesas</option>
+          <option value="Clientes">Clientes</option>
+        </select>
+        <button type="button" id="buscarAuditoria">Buscar</button>
+      </div>
+      <table id="tabelaAuditoria">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Usuario</th>
+            <th>Acao</th>
+            <th>Area</th>
+            <th>ID</th>
+            <th>Motivo</th>
+            <th>Detalhes</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="usersSection" class="users-panel owner-section" style="display: none;">
+      <h2>Usuarios <button type="button" class="help-tip" title="Crie um acesso para cada funcionario. Assim vendas, pagamentos e cancelamentos ficam rastreados pelo nome certo.">?</button></h2>
+      <form id="userForm">
+        <input type="hidden" id="userOriginalUsername">
+        <input type="text" id="userName" placeholder="Nome exibido" required>
+        <input type="text" id="userUsername" placeholder="Usuario curto" required>
+        <select id="userRole">
+          <option value="staff">Funcionario</option>
+          <option value="owner">Administrador</option>
+        </select>
+        <input type="password" id="userPassword" placeholder="Senha/PIN">
+        <button type="submit">Salvar usuario</button>
+        <button type="button" id="clearUserForm">Limpar</button>
+      </form>
+      <p class="form-hint">Para editar sem trocar a senha, deixe o campo Senha/PIN vazio.</p>
+      <table id="tabelaUsuarios">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Usuario</th>
+            <th>Perfil</th>
+            <th>Acoes</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="settingsSection" class="settings-panel owner-section" style="display: none;">
+      <h2>Configuracoes da empresa <button type="button" class="help-tip" title="Aqui o administrador escolhe modulos e modo de uso. Desative o que a empresa nao precisa para simplificar a rotina.">?</button></h2>
+      <form id="settingsForm">
+        <label>
+          Nome da empresa
+          <input type="text" id="configCompanyName">
+        </label>
+        <label>
+          Titulo do app
+          <input type="text" id="configAppTitle">
+        </label>
+        <label>
+          WhatsApp
+          <input type="text" id="configWhatsapp">
+        </label>
+        <label>
+          Modo de uso
+          <select id="configBusinessLevel">
+            <option value="simple">Venda simples</option>
+            <option value="catalog">Catalogo simples</option>
+            <option value="stock">Estoque controlado</option>
+          </select>
+        </label>
+        <fieldset>
+          <legend>Modulos ativos</legend>
+          <label><input type="checkbox" id="moduleManualSales"> Vendas</label>
+          <label><input type="checkbox" id="moduleClients"> Clientes</label>
+          <label><input type="checkbox" id="modulePayments"> Pagamentos</label>
+          <label><input type="checkbox" id="moduleFinance"> Administracao</label>
+          <label><input type="checkbox" id="moduleBackup"> Backup</label>
+          <label><input type="checkbox" id="moduleProducts"> Produtos / Catalogo</label>
+          <label><input type="checkbox" id="moduleStock"> Controle de estoque</label>
+          <label><input type="checkbox" id="moduleBarcode"> Codigo de barras</label>
+        </fieldset>
+        <button type="submit">Salvar configuracoes</button>
+        <p id="settingsStatus"></p>
+      </form>
+    </section>
+  </section>
 
 <script src="faturamento.js"></script>
 </body>

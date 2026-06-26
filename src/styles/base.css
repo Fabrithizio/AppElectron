@@ -1,0 +1,45 @@
+:root {
+  --color-bg: #eef1ef;
+  --color-surface: #ffffff;
+  --color-border: #d7ddda;
+  --color-text: #172121;
+  --color-muted: #5b6764;
+  --color-primary: #0f766e;
+  --color-primary-dark: #115e59;
+  --radius: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled,
+select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+a {
+  color: inherit;
+}
+
+table {
+  border-collapse: collapse;
+}

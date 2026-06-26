@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Produtos</title>
+  <link rel="stylesheet" href="../../styles/base.css">
+  <link rel="stylesheet" href="produtos.css">
+</head>
+<body>
+  <header>
+    <a href="../../index.html"><img src="../../assets/imgs/voltar.png" alt="voltar"></a>
+    <h1>Produtos</h1>
+  </header>
+
+  <main>
+    <section class="form-panel">
+      <h2>Cadastro de produto <button type="button" class="help-tip" title="Use este cadastro para produtos repetidos, controle por codigo de barras, estoque minimo e localizacao. Para venda avulsa, continue usando item livre na tela de vendas.">?</button></h2>
+      <form id="produtoForm">
+        <input type="hidden" id="produtoId">
+        <input type="text" id="produtoNome" placeholder="Nome do produto" required>
+        <input type="text" id="produtoCodigo" placeholder="Codigo / codigo de barras">
+        <input type="text" id="produtoCategoria" placeholder="Categoria">
+        <input type="text" id="produtoFornecedor" placeholder="Fornecedor">
+        <input type="number" id="produtoPrecoVenda" placeholder="Preco de venda" step="0.01" min="0" required>
+        <input type="number" id="produtoPrecoCusto" placeholder="Custo opcional" step="0.01" min="0">
+        <input type="text" id="produtoUnidade" placeholder="Unidade: un, kg, m" value="un">
+        <input type="number" id="produtoQuantidade" placeholder="Quantidade atual" step="0.01" min="0">
+        <input type="number" id="produtoEstoqueMinimo" placeholder="Estoque minimo" step="0.01" min="0">
+        <input type="text" id="produtoLocalizacao" placeholder="Localizacao: prateleira, caixa">
+        <textarea id="produtoObservacao" placeholder="Observacoes"></textarea>
+        <label class="checkbox-line">
+          <input type="checkbox" id="produtoControlarEstoque">
+          Controlar estoque deste produto
+        </label>
+        <div class="actions">
+          <button type="submit">Salvar</button>
+          <button type="button" id="limparForm">Limpar</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="list-panel">
+      <div class="list-header">
+        <h2>Catalogo</h2>
+        <input type="text" id="buscaProduto" placeholder="Buscar produto">
+      </div>
+      <div id="estoqueBaixo" class="stock-alert"></div>
+      <table id="tabelaProdutos">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Codigo</th>
+            <th>Categoria</th>
+            <th>Venda</th>
+            <th>Custo</th>
+            <th>Qtd.</th>
+            <th>Min.</th>
+            <th>Local</th>
+            <th>Estoque</th>
+            <th>Acoes</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="produtos.js"></script>
+</body>
+</html>

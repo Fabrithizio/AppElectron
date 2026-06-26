@@ -1,0 +1,171 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+  min-height: 100vh;
+  color: #172121;
+  background: #eef1ef;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #d7ddda;
+}
+
+header img {
+  width: 44px;
+}
+
+main {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 18px;
+  padding: 18px;
+}
+
+.form-panel,
+.list-panel {
+  padding: 16px;
+  border: 1px solid #d7ddda;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+input,
+textarea,
+button {
+  min-height: 36px;
+  padding: 6px 8px;
+  font-size: 14px;
+}
+
+textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+
+button {
+  border: 1px solid #0f766e;
+  border-radius: 6px;
+  background: #0f766e;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button.secondary,
+#limparForm {
+  background: #eef1ef;
+  color: #172121;
+  border-color: #cfd8d4;
+}
+
+.help-tip {
+  width: 28px;
+  min-height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  background: #eef1ef;
+  color: #172121;
+  border-color: #cfd8d4;
+}
+
+.stock-alert {
+  min-height: 36px;
+  margin-bottom: 10px;
+  padding: 9px 10px;
+  border: 1px solid #cfd8d4;
+  border-radius: 6px;
+  background: #f8faf9;
+  color: #33423f;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.stock-alert.is-danger {
+  border-color: #fecaca;
+  background: #fff1f2;
+  color: #991b1b;
+}
+
+.checkbox-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.checkbox-line input {
+  min-height: auto;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.list-header input {
+  width: 260px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 8px;
+  border: 1px solid #d7ddda;
+  text-align: left;
+}
+
+th {
+  background: #eef1ef;
+}
+
+td:last-child {
+  white-space: nowrap;
+}
+
+td button {
+  min-height: 30px;
+  margin-right: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
+}
+
+@media (max-width: 860px) {
+  main {
+    grid-template-columns: 1fr;
+  }
+}
