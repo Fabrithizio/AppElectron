@@ -2,3 +2,4 @@
 appengine-generated/
 # .gitignore
 node_modules
+dist/
