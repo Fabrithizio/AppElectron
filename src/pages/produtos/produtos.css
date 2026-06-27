@@ -32,11 +32,16 @@ main {
 }
 
 .form-panel,
+.stock-panel,
 .list-panel {
   padding: 16px;
   border: 1px solid #d7ddda;
   border-radius: 8px;
   background: #ffffff;
+}
+
+.list-panel {
+  grid-column: 1 / -1;
 }
 
 h2 {
@@ -63,6 +68,13 @@ button {
 textarea {
   min-height: 76px;
   resize: vertical;
+}
+
+.field-hint {
+  margin-top: -6px;
+  color: #5b6764;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 button {
@@ -142,6 +154,10 @@ table {
   border-collapse: collapse;
 }
 
+#tabelaMovimentos {
+  margin-top: 12px;
+}
+
 th,
 td {
   padding: 8px;
@@ -157,6 +173,10 @@ td:last-child {
   white-space: nowrap;
 }
 
+#tabelaMovimentos td:last-child {
+  white-space: normal;
+}
+
 td button {
   min-height: 30px;
   margin-right: 6px;
@@ -167,5 +187,9 @@ td button {
 @media (max-width: 860px) {
   main {
     grid-template-columns: 1fr;
+  }
+
+  .list-panel {
+    grid-column: auto;
   }
 }

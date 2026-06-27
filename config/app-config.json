@@ -12,6 +12,18 @@
         "username": "admin",
         "name": "Administrador",
         "role": "owner",
+        "permissions": {
+          "sales": true,
+          "clients": true,
+          "payments": true,
+          "products": true,
+          "history": true,
+          "whatsapp": true,
+          "cash": true,
+          "finance": true,
+          "administration": true,
+          "criticalActions": true
+        },
         "passwordSalt": "owner-default-salt",
         "passwordHash": "81fe6a398fe35a68b2af5b4578de7bb1685c07a8dde3a45a76ae6faad0aa2f9b"
       },
@@ -19,6 +31,18 @@
         "username": "funcionario",
         "name": "Funcionario",
         "role": "staff",
+        "permissions": {
+          "sales": true,
+          "clients": true,
+          "payments": true,
+          "products": true,
+          "history": true,
+          "whatsapp": true,
+          "cash": true,
+          "finance": false,
+          "administration": false,
+          "criticalActions": false
+        },
         "passwordSalt": "staff-default-salt",
         "passwordHash": "1b3be845a3ac5c6cd95c2b611e7f7edd3abea6861c8a8995ca23d4576668959d"
       }
@@ -32,6 +56,7 @@
     "manualSales": true,
     "clients": true,
     "payments": true,
+    "cash": true,
     "finance": true,
     "backup": true,
     "simpleProducts": true,

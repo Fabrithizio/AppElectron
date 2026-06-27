@@ -178,10 +178,16 @@ button.secondary {
 }
 
 .danger-button {
-  margin-top: 14px;
   background: #fff1f2;
   border-color: #fecaca;
   color: #b91c1c;
+}
+
+.client-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
 }
 
 .payment-card {

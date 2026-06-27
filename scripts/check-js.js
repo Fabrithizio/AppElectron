@@ -3,7 +3,7 @@ const { join } = require('path');
 const { spawnSync } = require('child_process');
 
 const root = join(__dirname, '..');
-const ignoredDirs = new Set(['.git', 'node_modules']);
+const ignoredDirs = new Set(['.git', 'node_modules', 'dist']);
 const files = [];
 
 function walk(dir) {

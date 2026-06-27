@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Caixa</title>
+  <link rel="stylesheet" href="../../styles/base.css">
+  <link rel="stylesheet" href="caixa.css">
+</head>
+<body>
+  <header class="page-header">
+    <a href="../../index.html" class="back-link" title="Voltar">
+      <img src="../../assets/imgs/voltar.png" alt="">
+    </a>
+    <div>
+      <p>Controle operacional</p>
+      <h1>Caixa</h1>
+    </div>
+  </header>
+
+  <main class="cash-layout">
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <span class="eyebrow">Caixa atual</span>
+          <h2 id="cashStatusTitle">Carregando</h2>
+        </div>
+        <button id="reloadButton" type="button">Atualizar</button>
+      </div>
+
+      <form id="openCashForm" class="cash-form">
+        <label>
+          Valor inicial
+          <input id="initialValue" type="number" min="0" step="0.01" value="0">
+        </label>
+        <button type="submit">Abrir caixa</button>
+      </form>
+
+      <div id="openCashPanel" class="cash-open" hidden>
+        <dl class="cash-summary">
+          <div>
+            <dt>Aberto em</dt>
+            <dd id="openedAt">-</dd>
+          </div>
+          <div>
+            <dt>Valor inicial</dt>
+            <dd id="initialTotal">R$ 0,00</dd>
+          </div>
+          <div>
+            <dt>Vendas pagas</dt>
+            <dd id="paidSalesTotal">R$ 0,00</dd>
+          </div>
+          <div>
+            <dt>Pagamentos recebidos</dt>
+            <dd id="paymentsTotal">R$ 0,00</dd>
+          </div>
+          <div>
+            <dt>Saidas registradas</dt>
+            <dd id="expensesTotal">R$ 0,00</dd>
+          </div>
+          <div class="expected">
+            <dt>Total esperado</dt>
+            <dd id="expectedTotal">R$ 0,00</dd>
+          </div>
+        </dl>
+
+        <form id="closeCashForm" class="cash-form close-form">
+          <label>
+            Valor contado no caixa
+            <input id="countedValue" type="number" min="0" step="0.01" required>
+          </label>
+          <label>
+            Observacao
+            <textarea id="cashNote" rows="3" placeholder="Ex.: faltou troco, retirada autorizada, conferencia normal"></textarea>
+          </label>
+          <button type="submit">Fechar caixa</button>
+        </form>
+      </div>
+
+      <p id="message" class="message"></p>
+    </section>
+
+    <section id="historyPanel" class="panel" hidden>
+      <div class="panel-heading">
+        <div>
+          <span class="eyebrow">Administracao</span>
+          <h2>Fechamentos registrados</h2>
+        </div>
+      </div>
+
+      <form id="historyFilter" class="filter-row">
+        <label>
+          Inicio
+          <input id="historyStart" type="date">
+        </label>
+        <label>
+          Fim
+          <input id="historyEnd" type="date">
+        </label>
+        <label>
+          Usuario
+          <input id="historyUser" type="search" placeholder="todos">
+        </label>
+        <button type="submit">Filtrar</button>
+      </form>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Usuario</th>
+              <th>Status</th>
+              <th>Esperado</th>
+              <th>Contado</th>
+              <th>Diferenca</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="caixa.js"></script>
+</body>
+</html>

@@ -29,6 +29,7 @@
   <section id="ownerContent" style="display: none;">
     <nav class="owner-tabs">
       <button type="button" class="owner-tab active" data-target="overviewSection">Visao geral</button>
+      <button type="button" class="owner-tab" data-target="accountsSection">Contas</button>
       <button type="button" class="owner-tab" data-target="expensesSection">Saidas</button>
       <button type="button" class="owner-tab" data-target="auditSection">Auditoria</button>
       <button type="button" class="owner-tab" data-target="usersSection">Usuarios</button>
@@ -50,6 +51,58 @@
         <div id="totalIntervaloPagamentos" class="balao total" style="display: none;"></div>
       </div>
     </div>
+    </section>
+
+    <section id="accountsSection" class="accounts-panel owner-section" style="display: none;">
+      <h2>Contas a pagar e receber <button type="button" class="help-tip" title="Use para compromissos futuros ou pendentes. Ao pagar ou receber, confirme a quitacao para manter a auditoria.">?</button></h2>
+      <form id="accountForm">
+        <select id="accountTipo">
+          <option value="pagar">Conta a pagar</option>
+          <option value="receber">Conta a receber</option>
+        </select>
+        <input type="text" id="accountDescricao" placeholder="Descricao" required>
+        <input type="text" id="accountPessoa" placeholder="Fornecedor/cliente">
+        <input type="text" id="accountCategoria" placeholder="Categoria">
+        <input type="number" id="accountValor" placeholder="Valor" step="0.01" min="0" required>
+        <input type="date" id="accountVencimento" required>
+        <input type="text" id="accountObservacao" placeholder="Observacao">
+        <button type="submit">Registrar conta</button>
+      </form>
+      <div class="account-filters">
+        <select id="accountFilterTipo">
+          <option value="">Todos os tipos</option>
+          <option value="pagar">A pagar</option>
+          <option value="receber">A receber</option>
+        </select>
+        <select id="accountFilterStatus">
+          <option value="">Todos os status</option>
+          <option value="pendente">Pendente</option>
+          <option value="pago">Pago/recebido</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+        <input type="date" id="accountInicio">
+        <input type="date" id="accountFim">
+        <button type="button" id="buscarContas">Buscar</button>
+      </div>
+      <div class="accounts-summary">
+        <span id="accountsPendingPay">A pagar: R$ 0,00</span>
+        <span id="accountsPendingReceive">A receber: R$ 0,00</span>
+        <span id="accountsOverdue">Vencidas: 0</span>
+      </div>
+      <table id="tabelaContas">
+        <thead>
+          <tr>
+            <th>Vencimento</th>
+            <th>Tipo</th>
+            <th>Descricao</th>
+            <th>Pessoa</th>
+            <th>Valor</th>
+            <th>Status</th>
+            <th>Acoes</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </section>
 
     <section id="expensesSection" class="despesas-panel owner-section" style="display: none;">
@@ -87,9 +140,16 @@
           <option value="vendas">Vendas</option>
           <option value="Pagamentos">Pagamentos</option>
           <option value="Despesas">Despesas</option>
+          <option value="FinanceiroContas">Contas</option>
           <option value="Clientes">Clientes</option>
+          <option value="Produtos">Produtos</option>
+          <option value="StockMovimentos">Estoque</option>
+          <option value="Usuarios">Usuarios</option>
+          <option value="Configuracoes">Configuracoes</option>
+          <option value="Backup">Backup</option>
         </select>
         <button type="button" id="buscarAuditoria">Buscar</button>
+        <button type="button" id="exportarAuditoria">Exportar CSV</button>
       </div>
       <table id="tabelaAuditoria">
         <thead>
@@ -109,6 +169,7 @@
 
     <section id="usersSection" class="users-panel owner-section" style="display: none;">
       <h2>Usuarios <button type="button" class="help-tip" title="Crie um acesso para cada funcionario. Assim vendas, pagamentos e cancelamentos ficam rastreados pelo nome certo.">?</button></h2>
+      <p id="defaultPasswordWarning" class="security-warning"></p>
       <form id="userForm">
         <input type="hidden" id="userOriginalUsername">
         <input type="text" id="userName" placeholder="Nome exibido" required>
@@ -117,11 +178,24 @@
           <option value="staff">Funcionario</option>
           <option value="owner">Administrador</option>
         </select>
-        <input type="password" id="userPassword" placeholder="Senha/PIN">
+        <input type="password" id="userPassword" placeholder="Nova senha/PIN">
         <button type="submit">Salvar usuario</button>
         <button type="button" id="clearUserForm">Limpar</button>
+        <fieldset class="permissions-grid">
+          <legend>Permissoes do usuario</legend>
+          <label><input type="checkbox" id="permSales"> Vendas</label>
+          <label><input type="checkbox" id="permClients"> Clientes</label>
+          <label><input type="checkbox" id="permPayments"> Pagamentos</label>
+          <label><input type="checkbox" id="permProducts"> Produtos</label>
+          <label><input type="checkbox" id="permHistory"> Historico</label>
+          <label><input type="checkbox" id="permWhatsapp"> WhatsApp</label>
+          <label><input type="checkbox" id="permCash"> Caixa</label>
+          <label><input type="checkbox" id="permFinance"> Financeiro</label>
+          <label><input type="checkbox" id="permAdministration"> Administracao</label>
+          <label><input type="checkbox" id="permCriticalActions"> Cancelamentos criticos</label>
+        </fieldset>
       </form>
-      <p class="form-hint">Para editar sem trocar a senha, deixe o campo Senha/PIN vazio.</p>
+      <p class="form-hint">Para trocar senha/PIN, edite o usuario, preencha "Nova senha/PIN" e salve. Se deixar vazio, a senha atual continua igual.</p>
       <table id="tabelaUsuarios">
         <thead>
           <tr>
@@ -137,6 +211,22 @@
 
     <section id="settingsSection" class="settings-panel owner-section" style="display: none;">
       <h2>Configuracoes da empresa <button type="button" class="help-tip" title="Aqui o administrador escolhe modulos e modo de uso. Desative o que a empresa nao precisa para simplificar a rotina.">?</button></h2>
+      <div class="admin-warning">
+        Antes de atualizar o sistema, trocar banco ou mexer em configuracoes importantes, faca backup.
+        <button type="button" id="adminBackupButton">Fazer backup agora</button>
+        <button type="button" id="databaseHealthButton">Verificar banco</button>
+      </div>
+      <details class="setup-checklist">
+        <summary>Checklist para instalar em outra empresa</summary>
+        <label><input type="checkbox"> Trocar nome da empresa e titulo do app</label>
+        <label><input type="checkbox"> Escolher logo da empresa</label>
+        <label><input type="checkbox"> Criar usuario real para cada funcionario</label>
+        <label><input type="checkbox"> Trocar senha/PIN do administrador</label>
+        <label><input type="checkbox"> Configurar WhatsApp da empresa</label>
+        <label><input type="checkbox"> Escolher modo: simples, catalogo ou estoque controlado</label>
+        <label><input type="checkbox"> Fazer backup antes de importar banco antigo</label>
+        <label><input type="checkbox"> Testar venda, pagamento, caixa e cancelamento</label>
+      </details>
       <form id="settingsForm">
         <label>
           Nome da empresa
@@ -151,6 +241,11 @@
           <input type="text" id="configWhatsapp">
         </label>
         <label>
+          Logo
+          <input type="text" id="configLogo" readonly>
+        </label>
+        <button type="button" id="selectLogoButton">Escolher logo</button>
+        <label>
           Modo de uso
           <select id="configBusinessLevel">
             <option value="simple">Venda simples</option>
@@ -163,11 +258,19 @@
           <label><input type="checkbox" id="moduleManualSales"> Vendas</label>
           <label><input type="checkbox" id="moduleClients"> Clientes</label>
           <label><input type="checkbox" id="modulePayments"> Pagamentos</label>
+          <label><input type="checkbox" id="moduleCash"> Caixa</label>
           <label><input type="checkbox" id="moduleFinance"> Administracao</label>
           <label><input type="checkbox" id="moduleBackup"> Backup</label>
           <label><input type="checkbox" id="moduleProducts"> Produtos / Catalogo</label>
           <label><input type="checkbox" id="moduleStock"> Controle de estoque</label>
           <label><input type="checkbox" id="moduleBarcode"> Codigo de barras</label>
+        </fieldset>
+        <fieldset>
+          <legend>Rotina de seguranca</legend>
+          <label>
+            Tempo de sessao em minutos
+            <input type="number" id="configSessionTimeout" min="5" max="480" step="5">
+          </label>
         </fieldset>
         <button type="submit">Salvar configuracoes</button>
         <p id="settingsStatus"></p>

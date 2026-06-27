@@ -11,6 +11,7 @@ const paymentButton = document.getElementById('paymentButton');
 const paymentHint = document.getElementById('paymentHint');
 const historyButton = document.getElementById('historico');
 let selectedClient = null;
+let canUseCriticalActions = false;
 
 function formatCurrency(value) {
   return Number(value || 0).toLocaleString('pt-BR', {
@@ -51,6 +52,38 @@ function createField(label, value) {
   return field;
 }
 
+function onlyDigits(value) {
+  return String(value || '').replace(/\D/g, '');
+}
+
+function formatPhoneForWhatsApp(phone) {
+  const digits = onlyDigits(phone);
+  if (!digits) {
+    return '';
+  }
+
+  if (digits.startsWith('55')) {
+    return digits;
+  }
+
+  return `55${digits}`;
+}
+
+async function openClientWhatsapp(cliente) {
+  const phone = formatPhoneForWhatsApp(cliente.telefone);
+  if (!phone) {
+    showModalMessage('Este cliente nao possui telefone cadastrado.');
+    return;
+  }
+
+  const debt = Number(cliente.divida || 0);
+  const message = debt > 0
+    ? `Ola ${cliente.nome}, tudo bem? Estamos entrando em contato sobre sua pendencia de ${formatCurrency(debt)}.`
+    : `Ola ${cliente.nome}, tudo bem?`;
+  const url = `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
+  await ipcRenderer.invoke('app:open-whatsapp', url);
+}
+
 function setClientActions(cliente) {
   const debt = Number(cliente.divida || 0);
   paymentInput.disabled = debt <= 0;
@@ -87,24 +120,42 @@ function renderClient(cliente) {
   );
   card.appendChild(grid);
 
-  const removeButton = document.createElement('button');
-  removeButton.type = 'button';
-  removeButton.className = 'danger-button';
-  removeButton.textContent = 'Inativar cliente';
-  removeButton.addEventListener('click', async () => {
-    const result = await ipcRenderer.invoke('clientes:delete', cliente.id);
-    if (result.deleted) {
-      selectedClient = null;
-      clientDetails.innerHTML = '';
-      emptyState.style.display = 'flex';
-      searchInput.value = '';
-      historyBox.innerHTML = '';
-      setClientActions({ divida: 0 });
-      historyButton.disabled = true;
-      showModalMessage('Cliente inativado.');
-    }
+  const buttons = document.createElement('div');
+  buttons.className = 'client-actions';
+
+  const whatsappButton = document.createElement('button');
+  whatsappButton.type = 'button';
+  whatsappButton.textContent = 'WhatsApp';
+  whatsappButton.addEventListener('click', () => {
+    openClientWhatsapp(cliente).catch((err) => {
+      console.error(err);
+      showModalMessage('Nao foi possivel abrir o WhatsApp.');
+    });
   });
-  card.appendChild(removeButton);
+
+  buttons.appendChild(whatsappButton);
+
+  if (canUseCriticalActions) {
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'danger-button';
+    removeButton.textContent = 'Inativar cliente';
+    removeButton.addEventListener('click', async () => {
+      const result = await ipcRenderer.invoke('clientes:delete', cliente.id);
+      if (result.deleted) {
+        selectedClient = null;
+        clientDetails.innerHTML = '';
+        emptyState.style.display = 'flex';
+        searchInput.value = '';
+        historyBox.innerHTML = '';
+        setClientActions({ divida: 0 });
+        historyButton.disabled = true;
+        showModalMessage('Cliente inativado.');
+      }
+    });
+    buttons.appendChild(removeButton);
+  }
+  card.appendChild(buttons);
 
   clientDetails.appendChild(card);
   setClientActions(cliente);
@@ -293,3 +344,7 @@ window.addEventListener('click', (event) => {
     hideModal();
   }
 });
+
+ipcRenderer.invoke('auth:status').then((status) => {
+  canUseCriticalActions = Boolean(status.authenticated && status.user && status.user.permissions.criticalActions);
+}).catch(console.error);

@@ -23,6 +23,7 @@ const defaultConfig = {
     manualSales: true,
     clients: true,
     payments: true,
+    cash: true,
     finance: true,
     backup: true,
     simpleProducts: false,

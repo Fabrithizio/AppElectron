@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Ajuda</title>
+  <link rel="stylesheet" href="../../styles/base.css">
+  <link rel="stylesheet" href="ajuda.css">
+</head>
+<body>
+  <header>
+    <a href="../../index.html"><img src="../../assets/imgs/voltar.png" alt="voltar"></a>
+    <div>
+      <p>Manual rapido</p>
+      <h1>Central de Ajuda</h1>
+    </div>
+  </header>
+
+  <main>
+    <aside class="topics">
+      <button class="topic active" data-target="inicio">Inicio</button>
+      <button class="topic" data-target="vendas">Vendas</button>
+      <button class="topic" data-target="clientes">Clientes e cobranca</button>
+      <button class="topic" data-target="caixa">Caixa</button>
+      <button class="topic" data-target="produtos">Produtos e estoque</button>
+      <button class="topic" data-target="admin">Administracao</button>
+      <button class="topic" data-target="seguranca">Seguranca</button>
+      <button class="topic" data-target="instalacao">Instalacao</button>
+    </aside>
+
+    <section class="content">
+      <article id="inicio" class="help-section active">
+        <h2>Rotina recomendada</h2>
+        <ol>
+          <li>Funcionario entra com seu proprio usuario.</li>
+          <li>Abre o caixa no inicio do expediente.</li>
+          <li>Registra vendas, pagamentos e clientes durante o dia.</li>
+          <li>Usa Produtos somente quando a empresa quiser catalogo ou estoque.</li>
+          <li>Fecha o caixa no fim do expediente com o valor contado.</li>
+          <li>Administrador confere financeiro, auditoria, contas e usuarios.</li>
+        </ol>
+        <p>Operacoes financeiras e cancelamentos pedem confirmacao. O sistema evita apagar definitivamente dados importantes.</p>
+      </article>
+
+      <article id="vendas" class="help-section">
+        <h2>Vendas</h2>
+        <p>Use venda manual para lojas pequenas com itens variados. Use produtos cadastrados quando houver catalogo, codigo de barras ou estoque controlado.</p>
+        <ul>
+          <li>Venda paga entra nos totais do caixa.</li>
+          <li>Venda fiada aumenta a divida do cliente.</li>
+          <li>Venda com produto controlado baixa o estoque.</li>
+          <li>Cancelamento restaura estoque e ajusta divida quando necessario.</li>
+        </ul>
+      </article>
+
+      <article id="clientes" class="help-section">
+        <h2>Clientes e cobranca</h2>
+        <p>Cadastre cliente para acompanhar fiado, pagamentos, telefone e historico. Qualquer pagamento parcial reinicia a contagem de atraso.</p>
+        <ul>
+          <li>Cliente entra como atrasado somente com 3 meses ou mais sem pagamento.</li>
+          <li>A lista de atraso mostra do maior tempo para o menor.</li>
+          <li>WhatsApp pode ser aberto pelo app quando houver telefone.</li>
+        </ul>
+      </article>
+
+      <article id="caixa" class="help-section">
+        <h2>Caixa</h2>
+        <p>O caixa serve para conferir o dinheiro do operador no dia. Ele nao substitui a area financeira do administrador.</p>
+        <ul>
+          <li>Abra com o valor inicial de troco.</li>
+          <li>O sistema soma vendas pagas e pagamentos recebidos.</li>
+          <li>Saidas registradas pelo administrador reduzem o esperado.</li>
+          <li>No fechamento, informe o valor contado e registre observacao se houver diferenca.</li>
+        </ul>
+      </article>
+
+      <article id="produtos" class="help-section">
+        <h2>Produtos e estoque</h2>
+        <p>Produto cadastrado ajuda em busca rapida, codigo de barras, preco padrao e estoque. Para loja simples, ainda e possivel vender item livre.</p>
+        <ul>
+          <li>Quantidade inicial pode ser informada ao criar produto.</li>
+          <li>Depois disso, altere quantidade por Movimentar estoque.</li>
+          <li>Entrada, saida e ajuste ficam registrados na auditoria.</li>
+          <li>Produto com estoque controlado nao pode ficar negativo.</li>
+        </ul>
+      </article>
+
+      <article id="admin" class="help-section">
+        <h2>Administracao</h2>
+        <p>Area reservada para administrador: financeiro, contas, saidas, auditoria, usuarios e configuracoes da empresa.</p>
+        <ul>
+          <li>Use Usuarios para criar um acesso por funcionario.</li>
+          <li>Use Permissoes para limitar financeiro, administracao e cancelamentos.</li>
+          <li>Use Configuracoes para trocar nome, logo, WhatsApp e modo de uso.</li>
+          <li>Use Auditoria para investigar venda, pagamento, cancelamento, estoque e contas.</li>
+        </ul>
+      </article>
+
+      <article id="seguranca" class="help-section">
+        <h2>Seguranca operacional</h2>
+        <ul>
+          <li>Evite compartilhar usuario entre funcionarios.</li>
+          <li>Troque a senha padrao antes de usar em producao.</li>
+          <li>Faca backup antes de atualizar o sistema ou trocar banco.</li>
+          <li>Feche o app ao sair do computador para exigir login novamente.</li>
+          <li>Operacoes erradas devem ser canceladas, nao apagadas do historico.</li>
+        </ul>
+      </article>
+
+      <article id="instalacao" class="help-section">
+        <h2>Instalacao e atualizacao</h2>
+        <ol>
+          <li>Baixe a versao atualizada do sistema.</li>
+          <li>Copie o banco antigo `Banco_dados.db` para a pasta do sistema novo.</li>
+          <li>Abra o app uma vez para ele criar colunas e tabelas novas.</li>
+          <li>Teste vendas, clientes, caixa e administracao antes de usar no dia real.</li>
+          <li>Para gerar app Windows, use `npm run package:win`.</li>
+        </ol>
+      </article>
+    </section>
+  </main>
+
+  <script src="ajuda.js"></script>
+</body>
+</html>

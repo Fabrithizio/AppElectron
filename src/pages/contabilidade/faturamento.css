@@ -130,7 +130,8 @@ button:hover {
 }
 
 .filtro,
-.despesas-panel {
+.despesas-panel,
+.accounts-panel {
   border: 1px solid #d7ddda;
   border-radius: 8px;
   background: #ffffff;
@@ -225,6 +226,7 @@ button:hover {
 }
 
 .despesas-panel,
+.accounts-panel,
 .settings-panel,
 .audit-panel,
 .users-panel {
@@ -233,6 +235,7 @@ button:hover {
 }
 
 .despesas-panel h2,
+.accounts-panel h2,
 .settings-panel h2,
 .audit-panel h2,
 .users-panel h2 {
@@ -260,11 +263,69 @@ button:hover {
   margin-bottom: 14px;
 }
 
+#accountForm {
+  display: grid;
+  grid-template-columns: 150px minmax(180px, 1.3fr) minmax(150px, 1fr) minmax(130px, 0.8fr) 110px 140px minmax(150px, 1fr) auto;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.account-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr)) auto;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.accounts-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.accounts-summary span {
+  padding: 10px;
+  border: 1px solid #d7ddda;
+  border-radius: 8px;
+  background: #f8faf9;
+  color: #33423f;
+  font-weight: 800;
+}
+
 #userForm {
   display: grid;
   grid-template-columns: minmax(180px, 1fr) minmax(150px, 0.8fr) 150px minmax(140px, 0.7fr) auto auto;
   gap: 8px;
   margin-bottom: 8px;
+}
+
+.permissions-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(130px, 1fr));
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #d7ddda;
+  border-radius: 8px;
+  background: #f8faf9;
+}
+
+.permissions-grid legend {
+  padding: 0 6px;
+  color: #4b5b57;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.permissions-grid label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #33423f;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .form-hint {
@@ -273,7 +334,21 @@ button:hover {
   font-size: 13px;
 }
 
+.security-warning {
+  min-height: 0;
+  margin-bottom: 12px;
+  color: #92400e;
+  font-size: 14px;
+  font-weight: 800;
+}
+
 #tabelaDespesas {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+}
+
+#tabelaContas {
   width: 100%;
   border-collapse: collapse;
   background: #ffffff;
@@ -281,7 +356,7 @@ button:hover {
 
 .audit-filters {
   display: grid;
-  grid-template-columns: repeat(5, minmax(120px, 1fr)) auto;
+  grid-template-columns: repeat(5, minmax(120px, 1fr)) auto auto;
   gap: 8px;
   margin-bottom: 14px;
 }
@@ -303,6 +378,41 @@ button:hover {
   padding: 8px;
   border-bottom: 1px solid #e1e7e4;
   text-align: left;
+}
+
+#tabelaContas th,
+#tabelaContas td {
+  padding: 8px;
+  border-bottom: 1px solid #e1e7e4;
+  text-align: left;
+}
+
+#tabelaContas th {
+  background: #eef1ef;
+  color: #33423f;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+#tabelaContas button {
+  min-height: 28px;
+  margin-right: 6px;
+  padding: 4px 8px;
+}
+
+.status-pendente {
+  color: #92400e;
+  font-weight: 800;
+}
+
+.status-pago {
+  color: #047857;
+  font-weight: 800;
+}
+
+.status-cancelado {
+  color: #6b7280;
+  font-weight: 800;
 }
 
 #tabelaUsuarios th {
@@ -374,6 +484,49 @@ button:hover {
   gap: 12px;
 }
 
+.admin-warning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid #facc15;
+  border-radius: 8px;
+  background: #fefce8;
+  color: #713f12;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.admin-warning button {
+  white-space: nowrap;
+}
+
+.setup-checklist {
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid #d7ddda;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.setup-checklist summary {
+  color: #33423f;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.setup-checklist label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  color: #4b5b57;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 #settingsForm label {
   display: flex;
   flex-direction: column;
@@ -400,6 +553,12 @@ button:hover {
   text-transform: none;
 }
 
+#settingsForm fieldset label:has(input[type="number"]) {
+  align-items: stretch;
+  flex-direction: column;
+  text-transform: uppercase;
+}
+
 #settingsForm button,
 #settingsStatus {
   align-self: center;
@@ -413,7 +572,11 @@ button:hover {
 @media (max-width: 920px) {
   .container,
   #despesaForm,
+  #accountForm,
   #userForm,
+  .permissions-grid,
+  .account-filters,
+  .accounts-summary,
   .audit-filters,
   #settingsForm,
   #settingsForm fieldset {
@@ -421,6 +584,11 @@ button:hover {
   }
 
   .filtro {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-warning {
     align-items: stretch;
     flex-direction: column;
   }

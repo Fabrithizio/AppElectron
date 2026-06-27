@@ -25,6 +25,7 @@
         <input type="number" id="produtoPrecoCusto" placeholder="Custo opcional" step="0.01" min="0">
         <input type="text" id="produtoUnidade" placeholder="Unidade: un, kg, m" value="un">
         <input type="number" id="produtoQuantidade" placeholder="Quantidade atual" step="0.01" min="0">
+        <small id="quantityHint" class="field-hint">Em produto novo, informe a quantidade inicial. Em produto existente, use Movimentar estoque.</small>
         <input type="number" id="produtoEstoqueMinimo" placeholder="Estoque minimo" step="0.01" min="0">
         <input type="text" id="produtoLocalizacao" placeholder="Localizacao: prateleira, caixa">
         <textarea id="produtoObservacao" placeholder="Observacoes"></textarea>
@@ -37,6 +38,38 @@
           <button type="button" id="limparForm">Limpar</button>
         </div>
       </form>
+    </section>
+
+    <section class="stock-panel">
+      <h2>Movimentar estoque <button type="button" class="help-tip" title="Use entrada para compra/recebimento, saida para perda/retirada e ajuste para correcao conferida. Toda movimentacao fica na auditoria.">?</button></h2>
+      <form id="stockForm">
+        <input type="hidden" id="stockProdutoId">
+        <input type="text" id="stockProdutoNome" placeholder="Selecione um produto na lista" readonly>
+        <select id="stockTipo">
+          <option value="entrada">Entrada</option>
+          <option value="saida">Saida</option>
+          <option value="ajuste">Ajuste para quantidade final</option>
+        </select>
+        <input type="number" id="stockQuantidade" placeholder="Quantidade" step="0.01" min="0" required>
+        <input type="text" id="stockMotivo" placeholder="Motivo obrigatorio" required>
+        <button type="submit">Registrar movimento</button>
+      </form>
+
+      <table id="tabelaMovimentos">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Produto</th>
+            <th>Tipo</th>
+            <th>Antes</th>
+            <th>Mov.</th>
+            <th>Depois</th>
+            <th>Usuario</th>
+            <th>Motivo</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </section>
 
     <section class="list-panel">

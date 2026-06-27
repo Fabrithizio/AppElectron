@@ -3,6 +3,33 @@ const { loadAppConfig, saveAppConfig } = require('./config');
 
 let session = null;
 
+const defaultPermissions = {
+  owner: {
+    sales: true,
+    clients: true,
+    payments: true,
+    products: true,
+    history: true,
+    whatsapp: true,
+    cash: true,
+    finance: true,
+    administration: true,
+    criticalActions: true,
+  },
+  staff: {
+    sales: true,
+    clients: true,
+    payments: true,
+    products: true,
+    history: true,
+    whatsapp: true,
+    cash: true,
+    finance: false,
+    administration: false,
+    criticalActions: false,
+  },
+};
+
 function hashPassword(password, salt) {
   return crypto.pbkdf2Sync(String(password || ''), String(salt || ''), 120000, 32, 'sha256').toString('hex');
 }
@@ -17,6 +44,15 @@ function publicUser(user) {
     name: user.name,
     role: user.role,
     active: user.active !== false,
+    permissions: getUserPermissions(user),
+  };
+}
+
+function getUserPermissions(user) {
+  const roleDefaults = defaultPermissions[user && user.role === 'owner' ? 'owner' : 'staff'];
+  return {
+    ...roleDefaults,
+    ...(user && user.permissions ? user.permissions : {}),
   };
 }
 
@@ -93,6 +129,11 @@ function saveUser(userData) {
     name,
     role,
     active: userData.active !== false,
+    permissions: {
+      ...defaultPermissions[role],
+      ...(existing && existing.permissions ? existing.permissions : {}),
+      ...(userData.permissions || {}),
+    },
   };
 
   if (userData.password) {
@@ -166,6 +207,17 @@ function requireRole(role) {
   }
 }
 
+function requirePermission(permission) {
+  const active = getSession();
+  if (!active || !active.permissions || active.permissions[permission] !== true) {
+    const err = new Error('Permissao insuficiente.');
+    err.code = 'PERMISSION_REQUIRED';
+    throw err;
+  }
+
+  return publicUser(active);
+}
+
 function requireAuthenticated() {
   const active = getSession();
   if (!active) {
@@ -182,6 +234,7 @@ module.exports = {
   logout,
   listUsers,
   requireAuthenticated,
+  requirePermission,
   requireRole,
   saveUser,
   deactivateUser,

@@ -202,11 +202,38 @@ main {
   gap: 14px;
 }
 
+.ops-alerts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
 .dashboard article,
+.ops-alerts div,
 .mode-panel {
   border: 1px solid #d7ddda;
   border-radius: 8px;
   background: #ffffff;
+}
+
+.ops-alerts div {
+  min-height: 46px;
+  padding: 13px 14px;
+  color: #33423f;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.ops-alerts .is-ok {
+  border-left: 5px solid #16a34a;
+}
+
+.ops-alerts .is-warning {
+  border-left: 5px solid #f59e0b;
+}
+
+.ops-alerts .is-danger {
+  border-left: 5px solid #dc2626;
 }
 
 .dashboard article {
@@ -315,7 +342,16 @@ main {
   }
 
   .dashboard,
+  .ops-alerts,
   .quick-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .dashboard,
+  .ops-alerts,
+  .quick-actions {
+    grid-template-columns: 1fr;
   }
 }

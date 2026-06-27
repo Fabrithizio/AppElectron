@@ -6,6 +6,8 @@ const tbody = table.tBodies[0];
 const tabVendas = document.getElementById('tabVendas');
 const tabPagamentos = document.getElementById('tabPagamentos');
 let currentType = 'vendas';
+let currentExport = { headers: [], rows: [] };
+let canUseCriticalActions = false;
 
 function isoDate(date) {
   return date.toISOString().split('T')[0];
@@ -53,15 +55,42 @@ function renderHeader(headers) {
   });
 }
 
-function setSummary(title, count, totalText = '') {
+function setSummary(title, count) {
   document.getElementById('summaryTitle').textContent = title;
   document.getElementById('summaryCount').textContent = `${count} registros`;
-  document.getElementById('summaryTotal').textContent = totalText;
+}
+
+function validateFilters() {
+  const filters = getFilters();
+  if (!filters.dataInicio || !filters.dataFim) {
+    alert('Informe inicio e fim do periodo.');
+    return false;
+  }
+
+  if (filters.dataInicio > filters.dataFim) {
+    alert('A data inicial nao pode ser maior que a data final.');
+    return false;
+  }
+
+  return true;
 }
 
 function renderSales(vendas) {
-  renderHeader(['ID', 'Data', 'Cliente', 'Metodo', 'Descricao', 'Valor', 'Cancelar']);
+  renderHeader(canUseCriticalActions
+    ? ['ID', 'Data', 'Cliente', 'Metodo', 'Descricao', 'Valor', 'Cancelar']
+    : ['ID', 'Data', 'Cliente', 'Metodo', 'Descricao', 'Valor']);
   tbody.innerHTML = '';
+  currentExport = {
+    headers: ['ID', 'Data', 'Cliente', 'Metodo', 'Descricao', 'Valor'],
+    rows: vendas.map((venda) => ({
+      ID: venda.id,
+      Data: formatDate(venda.dataVenda),
+      Cliente: venda.cliente,
+      Metodo: venda.metodoPagamento,
+      Descricao: venda.descricao || '',
+      Valor: formatCurrency(venda.preco),
+    })),
+  };
 
   vendas.forEach((venda) => {
     const row = tbody.insertRow();
@@ -72,26 +101,40 @@ function renderSales(vendas) {
     row.insertCell().textContent = venda.descricao || '-';
     row.insertCell().textContent = formatCurrency(venda.preco);
 
-    const actions = row.insertCell();
-    const button = document.createElement('button');
-    button.className = 'delete-button';
-    button.textContent = 'Cancelar';
-    button.addEventListener('click', async () => {
-      const result = await ipcRenderer.invoke('vendas:delete', venda.id);
-      if (result.deleted) {
-        await loadCurrent();
-      }
-    });
-    actions.appendChild(button);
+    if (canUseCriticalActions) {
+      const actions = row.insertCell();
+      const button = document.createElement('button');
+      button.className = 'delete-button';
+      button.textContent = 'Cancelar';
+      button.addEventListener('click', async () => {
+        const result = await ipcRenderer.invoke('vendas:delete', venda.id);
+        if (result.deleted) {
+          await loadCurrent();
+        }
+      });
+      actions.appendChild(button);
+    }
   });
 
-  const total = vendas.reduce((sum, venda) => sum + Number(venda.preco || 0), 0);
-  setSummary('Vendas no periodo', vendas.length, `Total exibido: ${formatCurrency(total)}`);
+  setSummary('Vendas no periodo', vendas.length);
 }
 
 function renderPayments(pagamentos) {
-  renderHeader(['ID', 'Data', 'Cliente', 'Pago', 'Divida anterior', 'Divida restante', 'Cancelar']);
+  renderHeader(canUseCriticalActions
+    ? ['ID', 'Data', 'Cliente', 'Pago', 'Divida anterior', 'Divida restante', 'Cancelar']
+    : ['ID', 'Data', 'Cliente', 'Pago', 'Divida anterior', 'Divida restante']);
   tbody.innerHTML = '';
+  currentExport = {
+    headers: ['ID', 'Data', 'Cliente', 'Pago', 'Divida anterior', 'Divida restante'],
+    rows: pagamentos.map((pagamento) => ({
+      ID: pagamento.id,
+      Data: formatDate(pagamento.data_pagamento),
+      Cliente: pagamento.nome_pagador,
+      Pago: formatCurrency(pagamento.valor_pago),
+      'Divida anterior': formatCurrency(pagamento.divida_anterior),
+      'Divida restante': formatCurrency(pagamento.divida_restante),
+    })),
+  };
 
   pagamentos.forEach((pagamento) => {
     const row = tbody.insertRow();
@@ -102,24 +145,29 @@ function renderPayments(pagamentos) {
     row.insertCell().textContent = formatCurrency(pagamento.divida_anterior);
     row.insertCell().textContent = formatCurrency(pagamento.divida_restante);
 
-    const actions = row.insertCell();
-    const button = document.createElement('button');
-    button.className = 'delete-button';
-    button.textContent = 'Cancelar';
-    button.addEventListener('click', async () => {
-      const result = await ipcRenderer.invoke('pagamentos:delete', pagamento.id);
-      if (result.deleted) {
-        await loadCurrent();
-      }
-    });
-    actions.appendChild(button);
+    if (canUseCriticalActions) {
+      const actions = row.insertCell();
+      const button = document.createElement('button');
+      button.className = 'delete-button';
+      button.textContent = 'Cancelar';
+      button.addEventListener('click', async () => {
+        const result = await ipcRenderer.invoke('pagamentos:delete', pagamento.id);
+        if (result.deleted) {
+          await loadCurrent();
+        }
+      });
+      actions.appendChild(button);
+    }
   });
 
-  const total = pagamentos.reduce((sum, pagamento) => sum + Number(pagamento.valor_pago || 0), 0);
-  setSummary('Pagamentos no periodo', pagamentos.length, `Total exibido: ${formatCurrency(total)}`);
+  setSummary('Pagamentos no periodo', pagamentos.length);
 }
 
 async function loadCurrent() {
+  if (!validateFilters()) {
+    return;
+  }
+
   const filters = getFilters();
   if (currentType === 'vendas') {
     const vendas = await ipcRenderer.invoke('vendas:list-filtered', filters);
@@ -154,5 +202,32 @@ document.getElementById('buscarHistorico').addEventListener('click', () => {
   });
 });
 
-setDefaultDates();
-loadCurrent().catch(console.error);
+document.getElementById('exportarHistorico').addEventListener('click', async () => {
+  if (!validateFilters()) {
+    return;
+  }
+
+  if (!currentExport.rows.length) {
+    alert('Busque registros antes de exportar.');
+    return;
+  }
+
+  const filters = getFilters();
+  const result = await ipcRenderer.invoke('app:export-csv', {
+    ...currentExport,
+    defaultName: `historico-${currentType}-${filters.dataInicio}-a-${filters.dataFim}.csv`,
+  });
+
+  if (!result.canceled) {
+    alert(`Relatorio salvo em:\n${result.filePath}`);
+  }
+});
+
+async function initialize() {
+  const status = await ipcRenderer.invoke('auth:status');
+  canUseCriticalActions = Boolean(status.authenticated && status.user && status.user.permissions.criticalActions);
+  setDefaultDates();
+  await loadCurrent();
+}
+
+initialize().catch(console.error);

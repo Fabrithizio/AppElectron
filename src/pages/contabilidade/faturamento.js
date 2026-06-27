@@ -7,11 +7,13 @@ const logoutButton = document.getElementById('logoutButton');
 const baloesDiv = document.getElementById('baloes');
 const paymentsBox = document.getElementById('totalIntervaloPagamentos');
 const despesasTable = document.getElementById('tabelaDespesas').tBodies[0];
+const contasTable = document.getElementById('tabelaContas').tBodies[0];
 const auditoriaTable = document.getElementById('tabelaAuditoria').tBodies[0];
 const usersTable = document.getElementById('tabelaUsuarios').tBodies[0];
 let ownerAuthenticated = false;
 let currentRange = null;
 let currentConfig = null;
+let currentAuditExport = { headers: [], rows: [] };
 
 function formatCurrency(value) {
   return Number(value || 0).toLocaleString('pt-BR', {
@@ -32,12 +34,31 @@ function isoDate(date) {
   return date.toISOString().split('T')[0];
 }
 
+function validateDateRange(startId, endId) {
+  const start = document.getElementById(startId).value;
+  const end = document.getElementById(endId).value;
+  if (!start || !end) {
+    alert('Informe inicio e fim do periodo.');
+    return false;
+  }
+
+  if (start > end) {
+    alert('A data inicial nao pode ser maior que a data final.');
+    return false;
+  }
+
+  return true;
+}
+
 function setDefaultRange() {
   const end = new Date();
   const start = new Date(end.getFullYear(), end.getMonth(), 1);
   document.getElementById('dataInicio').value = isoDate(start);
   document.getElementById('dataFim').value = isoDate(end);
   document.getElementById('despesaData').value = isoDate(end);
+  document.getElementById('accountVencimento').value = isoDate(end);
+  document.getElementById('accountInicio').value = isoDate(start);
+  document.getElementById('accountFim').value = isoDate(end);
   document.getElementById('auditInicio').value = isoDate(start);
   document.getElementById('auditFim').value = isoDate(end);
 }
@@ -59,6 +80,9 @@ function showSection(targetId) {
 
   if (targetId === 'auditSection') {
     carregarAuditoria().catch(console.error);
+  }
+  if (targetId === 'accountsSection') {
+    carregarContas().catch(console.error);
   }
   if (targetId === 'usersSection') {
     carregarUsuarios().catch(console.error);
@@ -151,44 +175,304 @@ function renderSummary(summary) {
   renderDespesas(summary.despesas || []);
 }
 
-function compactJson(value) {
+function statusLabel(status) {
+  if (status === 'pago') {
+    return 'Pago/recebido';
+  }
+  if (status === 'cancelado') {
+    return 'Cancelado';
+  }
+  return 'Pendente';
+}
+
+function typeLabel(tipo) {
+  return tipo === 'receber' ? 'A receber' : 'A pagar';
+}
+
+function isOverdue(row) {
+  if (row.status !== 'pendente' || !row.vencimento) {
+    return false;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dueDate = new Date(`${row.vencimento}T00:00:00`);
+  return dueDate < today;
+}
+
+function renderContas(rows) {
+  contasTable.innerHTML = '';
+  const pendingPay = rows
+    .filter((row) => row.status === 'pendente' && row.tipo === 'pagar')
+    .reduce((total, row) => total + Number(row.valor || 0), 0);
+  const pendingReceive = rows
+    .filter((row) => row.status === 'pendente' && row.tipo === 'receber')
+    .reduce((total, row) => total + Number(row.valor || 0), 0);
+  const overdue = rows.filter(isOverdue).length;
+
+  document.getElementById('accountsPendingPay').textContent = `A pagar: ${formatCurrency(pendingPay)}`;
+  document.getElementById('accountsPendingReceive').textContent = `A receber: ${formatCurrency(pendingReceive)}`;
+  document.getElementById('accountsOverdue').textContent = `Vencidas: ${overdue}`;
+
+  if (!rows.length) {
+    const row = contasTable.insertRow();
+    const cell = row.insertCell();
+    cell.colSpan = 7;
+    cell.textContent = 'Nenhuma conta encontrada.';
+    return;
+  }
+
+  rows.forEach((conta) => {
+    const row = contasTable.insertRow();
+    row.insertCell().textContent = formatDate(conta.vencimento);
+    row.insertCell().textContent = typeLabel(conta.tipo);
+    row.insertCell().textContent = conta.descricao;
+    row.insertCell().textContent = conta.pessoa || '-';
+    row.insertCell().textContent = formatCurrency(conta.valor);
+
+    const statusCell = row.insertCell();
+    statusCell.textContent = statusLabel(conta.status);
+    statusCell.className = `status-${conta.status}`;
+
+    const actions = row.insertCell();
+    if (conta.status === 'pendente') {
+      const payButton = document.createElement('button');
+      payButton.type = 'button';
+      payButton.textContent = conta.tipo === 'receber' ? 'Receber' : 'Pagar';
+      payButton.addEventListener('click', async () => {
+        const result = await ipcRenderer.invoke('contas:pay', conta.id);
+        if (result.paid) {
+          await carregarContas();
+          await carregarAuditoria();
+        }
+      });
+
+      const cancelButton = document.createElement('button');
+      cancelButton.type = 'button';
+      cancelButton.textContent = 'Cancelar';
+      cancelButton.className = 'danger-inline';
+      cancelButton.addEventListener('click', async () => {
+        const result = await ipcRenderer.invoke('contas:cancel', conta.id);
+        if (result.cancelled) {
+          await carregarContas();
+          await carregarAuditoria();
+        }
+      });
+
+      actions.append(payButton, cancelButton);
+    } else {
+      actions.textContent = conta.pago_em ? `Em ${formatDate(conta.pago_em)}` : '-';
+    }
+  });
+}
+
+function parseAuditJson(value) {
   if (!value) {
-    return '-';
+    return null;
   }
 
   try {
-    const parsed = JSON.parse(value);
-    if (!parsed) {
-      return '-';
-    }
-
-    if (parsed.preco || parsed.valorPago || parsed.valor || parsed.dividaAtual) {
-      return JSON.stringify(parsed).slice(0, 180);
-    }
-
-    return JSON.stringify(parsed).slice(0, 180);
+    return JSON.parse(value);
   } catch (_err) {
-    return String(value).slice(0, 180);
+    return null;
   }
+}
+
+function actionLabel(action) {
+  const labels = {
+    CRIAR_CLIENTE: 'Cadastrou cliente',
+    ALTERAR_CLIENTE: 'Alterou cliente',
+    INATIVAR_CLIENTE: 'Inativou cliente',
+    CRIAR_VENDA: 'Registrou venda',
+    CANCELAR_VENDA: 'Cancelou venda',
+    CRIAR_PAGAMENTO: 'Registrou pagamento',
+    CANCELAR_PAGAMENTO: 'Cancelou pagamento',
+    CRIAR_DESPESA: 'Registrou saida',
+    CANCELAR_DESPESA: 'Cancelou saida',
+    CRIAR_CONTA_PAGAR: 'Registrou conta a pagar',
+    CRIAR_CONTA_RECEBER: 'Registrou conta a receber',
+    PAGAR_CONTA: 'Pagou conta',
+    RECEBER_CONTA: 'Recebeu conta',
+    CANCELAR_CONTA: 'Cancelou conta',
+    CRIAR_PRODUTO: 'Cadastrou produto',
+    ALTERAR_PRODUTO: 'Alterou produto',
+    DESATIVAR_PRODUTO: 'Desativou produto',
+    MOVIMENTAR_ESTOQUE: 'Movimentou estoque',
+    CRIAR_USUARIO: 'Criou usuario',
+    ALTERAR_USUARIO: 'Alterou usuario',
+    DESATIVAR_USUARIO: 'Desativou usuario',
+    ALTERAR_CONFIGURACOES: 'Alterou configuracoes',
+    ALTERAR_LOGO: 'Alterou logo',
+    GERAR_BACKUP: 'Gerou backup',
+  };
+  return labels[action] || action;
+}
+
+function describeItems(items) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return '';
+  }
+
+  return ` Itens: ${items.map((item) => `${item.nome} (${item.quantidade})`).join(', ')}.`;
+}
+
+function auditDetails(item) {
+  const before = parseAuditJson(item.dados_antes);
+  const after = parseAuditJson(item.dados_depois);
+  const data = after || before || {};
+
+  if (item.acao === 'CRIAR_VENDA') {
+    return `Cliente ${data.cliente || '-'}, ${formatCurrency(data.preco)}, ${data.metodoPagamento || '-'} ${describeItems(data.itens)}`;
+  }
+
+  if (item.acao === 'CANCELAR_VENDA') {
+    const venda = data.venda || {};
+    return `Venda ${item.entidade_id || '-'} de ${venda.cliente || '-'}, ${formatCurrency(venda.preco)}, ${venda.metodoPagamento || '-'} cancelada.${describeItems(data.itens)}`;
+  }
+
+  if (item.acao === 'CRIAR_PAGAMENTO') {
+    return `Cliente ${data.nomePagador || '-'}, pago ${formatCurrency(data.valorPago)}, divida antes ${formatCurrency(data.dividaAtual)}, restante ${formatCurrency(data.dividaRestante)}.`;
+  }
+
+  if (item.acao === 'CANCELAR_PAGAMENTO') {
+    return `Pagamento ${item.entidade_id || '-'} de ${data.nome_pagador || '-'}, valor ${formatCurrency(data.valor_pago)} cancelado e devolvido para a divida.`;
+  }
+
+  if (item.acao === 'CRIAR_DESPESA') {
+    return `${data.descricao || '-'}, ${formatCurrency(data.valor)}, categoria ${data.categoria || '-'}.`;
+  }
+
+  if (item.acao === 'CANCELAR_DESPESA') {
+    return `${data.descricao || '-'}, ${formatCurrency(data.valor)}, categoria ${data.categoria || '-'} cancelada.`;
+  }
+
+  if (item.entidade === 'FinanceiroContas') {
+    const account = before || after || {};
+    return `${account.descricao || '-'}, ${formatCurrency(account.valor)}, vencimento ${formatDate(account.vencimento)}, status ${account.status || '-'}.`;
+  }
+
+  if (item.entidade === 'Produtos') {
+    return `Produto ${data.nome || '-'}, venda ${formatCurrency(data.preco_venda)}, estoque controlado ${data.controlar_estoque ? 'sim' : 'nao'}.`;
+  }
+
+  if (item.entidade === 'StockMovimentos') {
+    return `${data.produtoNome || '-'}, ${data.tipo || '-'}, antes ${data.quantidadeAnterior ?? '-'}, movimento ${data.quantidadeMovimentada ?? '-'}, depois ${data.quantidadeNova ?? '-'}.`;
+  }
+
+  if (item.entidade === 'Usuarios') {
+    return `Usuario ${data.username || '-'}, nome ${data.name || '-'}, perfil ${roleLabel(data.role)}.`;
+  }
+
+  if (item.entidade === 'Configuracoes') {
+    if (item.acao === 'ALTERAR_LOGO') {
+      return `Logo anterior ${before && before.logo ? before.logo : '-'}, nova logo ${after && after.logo ? after.logo : '-'}.`;
+    }
+    return `Empresa ${data.company && data.company.name ? data.company.name : '-'}, modo ${data.businessProfile && data.businessProfile.level ? data.businessProfile.level : '-'}.`;
+  }
+
+  if (item.entidade === 'Backup') {
+    return `Backup salvo em ${data.backupPath || '-'}.`;
+  }
+
+  if (item.acao === 'CRIAR_CLIENTE') {
+    return `Cliente ${data.nome || '-'} cadastrado.`;
+  }
+
+  if (item.acao === 'ALTERAR_CLIENTE') {
+    return `Cliente ${data.nome || '-'} alterado.`;
+  }
+
+  if (item.acao === 'INATIVAR_CLIENTE') {
+    return `Cliente ${data.nome || '-'} inativado.`;
+  }
+
+  return JSON.stringify(data).slice(0, 180);
 }
 
 function renderAuditoria(rows) {
   auditoriaTable.innerHTML = '';
+  currentAuditExport = {
+    headers: ['Data', 'Usuario', 'Acao', 'Area', 'ID', 'Motivo', 'Detalhes'],
+    rows: rows.map((item) => ({
+      Data: new Date(item.data_evento).toLocaleString('pt-BR'),
+      Usuario: item.usuario || '',
+      Acao: actionLabel(item.acao),
+      Area: item.entidade,
+      ID: item.entidade_id || '',
+      Motivo: item.motivo || '',
+      Detalhes: auditDetails(item),
+    })),
+  };
 
   rows.forEach((item) => {
     const row = auditoriaTable.insertRow();
     row.insertCell().textContent = new Date(item.data_evento).toLocaleString('pt-BR');
     row.insertCell().textContent = item.usuario || '-';
-    row.insertCell().textContent = item.acao;
+    row.insertCell().textContent = actionLabel(item.acao);
     row.insertCell().textContent = item.entidade;
     row.insertCell().textContent = item.entidade_id || '-';
     row.insertCell().textContent = item.motivo || '-';
-    row.insertCell().textContent = compactJson(item.dados_depois || item.dados_antes);
+    row.insertCell().textContent = auditDetails(item);
   });
 }
 
 function roleLabel(role) {
   return role === 'owner' ? 'Administrador' : 'Funcionario';
+}
+
+const permissionFields = {
+  sales: 'permSales',
+  clients: 'permClients',
+  payments: 'permPayments',
+  products: 'permProducts',
+  history: 'permHistory',
+  whatsapp: 'permWhatsapp',
+  cash: 'permCash',
+  finance: 'permFinance',
+  administration: 'permAdministration',
+  criticalActions: 'permCriticalActions',
+};
+
+const permissionDefaults = {
+  owner: {
+    sales: true,
+    clients: true,
+    payments: true,
+    products: true,
+    history: true,
+    whatsapp: true,
+    cash: true,
+    finance: true,
+    administration: true,
+    criticalActions: true,
+  },
+  staff: {
+    sales: true,
+    clients: true,
+    payments: true,
+    products: true,
+    history: true,
+    whatsapp: true,
+    cash: true,
+    finance: false,
+    administration: false,
+    criticalActions: false,
+  },
+};
+
+function setPermissionChecks(permissions) {
+  Object.entries(permissionFields).forEach(([permission, id]) => {
+    document.getElementById(id).checked = Boolean(permissions[permission]);
+  });
+}
+
+function collectPermissionChecks() {
+  return Object.fromEntries(
+    Object.entries(permissionFields).map(([permission, id]) => [
+      permission,
+      document.getElementById(id).checked,
+    ]),
+  );
 }
 
 function clearUserForm() {
@@ -198,6 +482,7 @@ function clearUserForm() {
   document.getElementById('userUsername').disabled = false;
   document.getElementById('userRole').value = 'staff';
   document.getElementById('userPassword').value = '';
+  setPermissionChecks(permissionDefaults.staff);
 }
 
 function fillUserForm(user) {
@@ -207,10 +492,19 @@ function fillUserForm(user) {
   document.getElementById('userUsername').disabled = true;
   document.getElementById('userRole').value = user.role || 'staff';
   document.getElementById('userPassword').value = '';
+  setPermissionChecks({
+    ...permissionDefaults[user.role === 'owner' ? 'owner' : 'staff'],
+    ...(user.permissions || {}),
+  });
 }
 
 function renderUsuarios(users) {
   usersTable.innerHTML = '';
+  const hasDefaultUsers = users.some((user) => ['admin', 'funcionario'].includes(user.username));
+  document.getElementById('defaultPasswordWarning').textContent = hasDefaultUsers
+    ? 'Atencao: ainda existem usuarios padrao. Edite cada um, troque a senha/PIN e use nomes reais para auditoria.'
+    : '';
+
   users.forEach((user) => {
     const row = usersTable.insertRow();
     row.insertCell().textContent = user.name;
@@ -268,6 +562,9 @@ async function carregarAuditoria() {
     showLogin();
     return;
   }
+  if (!validateDateRange('auditInicio', 'auditFim')) {
+    return;
+  }
 
   const rows = await ipcRenderer.invoke('auditoria:list', {
     dataInicio: document.getElementById('auditInicio').value,
@@ -280,15 +577,36 @@ async function carregarAuditoria() {
   renderAuditoria(rows);
 }
 
+async function carregarContas() {
+  if (!ownerAuthenticated) {
+    showLogin();
+    return;
+  }
+  if (!validateDateRange('accountInicio', 'accountFim')) {
+    return;
+  }
+
+  const rows = await ipcRenderer.invoke('contas:list', {
+    tipo: document.getElementById('accountFilterTipo').value,
+    status: document.getElementById('accountFilterStatus').value,
+    dataInicio: document.getElementById('accountInicio').value,
+    dataFim: document.getElementById('accountFim').value,
+  });
+  renderContas(rows);
+}
+
 function fillSettings(config) {
   currentConfig = config;
   document.getElementById('configCompanyName').value = config.company.name || '';
   document.getElementById('configAppTitle').value = config.company.appTitle || '';
   document.getElementById('configWhatsapp').value = config.company.whatsappUrl || '';
+  document.getElementById('configLogo').value = config.company.logo || '';
   document.getElementById('configBusinessLevel').value = config.businessProfile.level || 'simple';
+  document.getElementById('configSessionTimeout').value = Number(config.auth.sessionTimeoutMinutes || 30);
   document.getElementById('moduleManualSales').checked = Boolean(config.modules.manualSales);
   document.getElementById('moduleClients').checked = Boolean(config.modules.clients);
   document.getElementById('modulePayments').checked = Boolean(config.modules.payments);
+  document.getElementById('moduleCash').checked = Boolean(config.modules.cash);
   document.getElementById('moduleFinance').checked = Boolean(config.modules.finance);
   document.getElementById('moduleBackup').checked = Boolean(config.modules.backup);
   document.getElementById('moduleProducts').checked = Boolean(config.modules.simpleProducts);
@@ -310,12 +628,18 @@ function collectSettings() {
       name: document.getElementById('configCompanyName').value.trim(),
       appTitle: document.getElementById('configAppTitle').value.trim(),
       whatsappUrl: document.getElementById('configWhatsapp').value.trim(),
+      logo: document.getElementById('configLogo').value.trim() || currentConfig.company.logo,
+    },
+    auth: {
+      ...currentConfig.auth,
+      sessionTimeoutMinutes: Number(document.getElementById('configSessionTimeout').value || 30),
     },
     modules: {
       ...currentConfig.modules,
       manualSales: document.getElementById('moduleManualSales').checked,
       clients: document.getElementById('moduleClients').checked,
       payments: document.getElementById('modulePayments').checked,
+      cash: document.getElementById('moduleCash').checked,
       finance: document.getElementById('moduleFinance').checked,
       backup: document.getElementById('moduleBackup').checked,
       simpleProducts: document.getElementById('moduleProducts').checked,
@@ -346,8 +670,7 @@ async function buscarDados() {
   const dataInicio = document.getElementById('dataInicio').value;
   const dataFim = document.getElementById('dataFim').value;
 
-  if (!dataInicio || !dataFim) {
-    alert('Informe as datas de inicio e fim.');
+  if (!validateDateRange('dataInicio', 'dataFim')) {
     return;
   }
 
@@ -454,6 +777,47 @@ document.getElementById('despesaForm').addEventListener('submit', async (event) 
   }
 });
 
+document.getElementById('accountForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  if (!ownerAuthenticated) {
+    showLogin();
+    return;
+  }
+
+  const conta = {
+    tipo: document.getElementById('accountTipo').value,
+    descricao: document.getElementById('accountDescricao').value.trim(),
+    pessoa: document.getElementById('accountPessoa').value.trim(),
+    categoria: document.getElementById('accountCategoria').value.trim(),
+    valor: Number(document.getElementById('accountValor').value),
+    vencimento: document.getElementById('accountVencimento').value,
+    observacao: document.getElementById('accountObservacao').value.trim(),
+  };
+
+  if (!conta.descricao || !Number.isFinite(conta.valor) || conta.valor <= 0 || !conta.vencimento) {
+    alert('Preencha descricao, valor e vencimento da conta.');
+    return;
+  }
+
+  const result = await ipcRenderer.invoke('contas:create', conta);
+  if (result && result.cancelled) {
+    return;
+  }
+
+  event.target.reset();
+  document.getElementById('accountVencimento').value = isoDate(new Date());
+  await carregarContas();
+  await carregarAuditoria();
+});
+
+document.getElementById('buscarContas').addEventListener('click', () => {
+  carregarContas().catch((err) => {
+    console.error(err);
+    alert('Nao foi possivel carregar as contas.');
+  });
+});
+
 document.getElementById('buscarAuditoria').addEventListener('click', () => {
   carregarAuditoria().catch((err) => {
     console.error(err);
@@ -473,6 +837,7 @@ document.getElementById('userForm').addEventListener('submit', async (event) => 
     name: document.getElementById('userName').value.trim(),
     role: document.getElementById('userRole').value,
     password: document.getElementById('userPassword').value,
+    permissions: collectPermissionChecks(),
   };
 
   if (!userData.username || !userData.name) {
@@ -488,6 +853,27 @@ document.getElementById('userForm').addEventListener('submit', async (event) => 
 
 document.getElementById('clearUserForm').addEventListener('click', clearUserForm);
 
+document.getElementById('userRole').addEventListener('change', (event) => {
+  const role = event.target.value === 'owner' ? 'owner' : 'staff';
+  setPermissionChecks(permissionDefaults[role]);
+});
+
+document.getElementById('exportarAuditoria').addEventListener('click', async () => {
+  if (!currentAuditExport.rows.length) {
+    alert('Busque registros de auditoria antes de exportar.');
+    return;
+  }
+
+  const result = await ipcRenderer.invoke('app:export-csv', {
+    ...currentAuditExport,
+    defaultName: 'auditoria.csv',
+  });
+
+  if (!result.canceled) {
+    alert(`Auditoria salva em:\n${result.filePath}`);
+  }
+});
+
 document.getElementById('settingsForm').addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!ownerAuthenticated) {
@@ -500,7 +886,57 @@ document.getElementById('settingsForm').addEventListener('submit', async (event)
   document.getElementById('settingsStatus').textContent = 'Configuracoes salvas. Volte para a tela inicial para ver os modulos atualizados.';
 });
 
+document.getElementById('selectLogoButton').addEventListener('click', async () => {
+  if (!ownerAuthenticated) {
+    showLogin();
+    return;
+  }
+
+  const result = await ipcRenderer.invoke('app:select-logo');
+  if (result.canceled) {
+    return;
+  }
+
+  fillSettings(result.config);
+  document.getElementById('settingsStatus').textContent = 'Logo atualizada. Volte para a tela inicial para conferir.';
+});
+
+document.getElementById('adminBackupButton').addEventListener('click', async () => {
+  if (!ownerAuthenticated) {
+    showLogin();
+    return;
+  }
+
+  const result = await ipcRenderer.invoke('backup-database');
+  if (result.canceled) {
+    return;
+  }
+
+  alert(`Backup salvo em:\n${result.backupPath}`);
+});
+
+document.getElementById('databaseHealthButton').addEventListener('click', async () => {
+  if (!ownerAuthenticated) {
+    showLogin();
+    return;
+  }
+
+  const health = await ipcRenderer.invoke('app:database-health');
+  const counts = health.counts || {};
+  alert(
+    `Integridade: ${health.integrity}\n`
+    + `Banco: ${health.databasePath}\n\n`
+    + `Clientes: ${counts.clientes || 0}\n`
+    + `Vendas: ${counts.vendas || 0}\n`
+    + `Pagamentos: ${counts.pagamentos || 0}\n`
+    + `Produtos: ${counts.produtos || 0}\n`
+    + `Auditoria: ${counts.auditoria || 0}`,
+  );
+});
+
 initializeOwnerArea().catch((err) => {
   console.error('Nao foi possivel iniciar administracao:', err);
   showLogin();
 });
+
+clearUserForm();

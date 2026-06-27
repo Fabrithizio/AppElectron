@@ -1,4 +1,4 @@
-const { ipcRenderer, shell } = require('electron');
+const { ipcRenderer } = require('electron');
 
 const loginGate = document.getElementById('loginGate');
 const loginForm = document.getElementById('loginForm');
@@ -35,6 +35,38 @@ function updateSessionBadge(status) {
   badge.textContent = `${roleLabel(status.user.role)}: ${status.user.name || status.user.username}`;
 }
 
+function setAlert(id, text, level) {
+  const element = document.getElementById(id);
+  if (!element) {
+    return;
+  }
+
+  element.textContent = text;
+  element.classList.remove('is-ok', 'is-warning', 'is-danger');
+  element.classList.add(level);
+}
+
+function applySessionPermissions(status) {
+  const permissions = status.authenticated && status.user ? status.user.permissions || {} : {};
+  document.getElementById('ownerAreaButton').style.display = permissions.administration ? 'inline-flex' : 'none';
+  document.getElementById('whatsappButton').style.display = permissions.whatsapp ? 'inline-flex' : 'none';
+
+  const modulePermissionMap = {
+    manualSales: 'sales',
+    clients: 'clients',
+    payments: 'history',
+    simpleProducts: 'products',
+    cash: 'cash',
+  };
+
+  document.querySelectorAll('[data-module]').forEach((element) => {
+    const permission = modulePermissionMap[element.dataset.module];
+    if (permission) {
+      element.classList.toggle('is-disabled', permissions[permission] === false);
+    }
+  });
+}
+
 async function loadLoginUsers() {
   activeUsers = await ipcRenderer.invoke('auth:users');
   const select = document.getElementById('loginUser');
@@ -57,6 +89,7 @@ async function loadLoginUsers() {
 async function requireSession() {
   const status = await ipcRenderer.invoke('auth:status');
   updateSessionBadge(status);
+  applySessionPermissions(status);
   if (!status.authenticated) {
     showLoginGate();
     return false;
@@ -108,8 +141,8 @@ async function loadConfig() {
   applyModules(config.modules);
   applyBusinessProfile(config.businessProfile);
 
-  document.getElementById('whatsappButton').addEventListener('click', () => {
-    shell.openExternal(config.company.whatsappUrl);
+  document.getElementById('whatsappButton').addEventListener('click', async () => {
+    await ipcRenderer.invoke('app:open-whatsapp');
   });
 }
 
@@ -120,6 +153,36 @@ async function loadDashboard() {
   setText('debtClientsValue', String(summary.clientesComDivida));
   setText('debtClients', `${summary.clientesComDivida} clientes`);
   setText('lateClients', String(summary.clientesAtrasados));
+  await loadOperationalAlerts();
+}
+
+async function loadOperationalAlerts() {
+  try {
+    const cashStatus = await ipcRenderer.invoke('caixa:status');
+    if (cashStatus.open) {
+      setAlert('cashAlert', 'Caixa: aberto para este usuario', 'is-ok');
+    } else {
+      setAlert('cashAlert', 'Caixa: nenhum caixa aberto para este usuario', 'is-warning');
+    }
+  } catch (_err) {
+    setAlert('cashAlert', 'Caixa: sem permissao para consultar', 'is-warning');
+  }
+
+  try {
+    const lowStock = await ipcRenderer.invoke('produtos:low-stock');
+    if (!lowStock.length) {
+      setAlert('stockAlertHome', 'Estoque: nenhum produto abaixo do minimo', 'is-ok');
+      return;
+    }
+
+    setAlert(
+      'stockAlertHome',
+      `Estoque: ${lowStock.length} produto(s) abaixo do minimo`,
+      'is-danger',
+    );
+  } catch (_err) {
+    setAlert('stockAlertHome', 'Estoque: sem permissao para consultar', 'is-warning');
+  }
 }
 
 async function openOwnerArea() {
@@ -160,6 +223,7 @@ loginForm.addEventListener('submit', async (event) => {
 
   loginMessage.textContent = '';
   updateSessionBadge(result);
+  applySessionPermissions(result);
   hideLoginGate();
   await loadDashboard();
 });
@@ -176,6 +240,7 @@ document.getElementById('ownerLoginShortcut').addEventListener('click', () => {
 document.getElementById('logoutButton').addEventListener('click', async () => {
   await ipcRenderer.invoke('auth:logout');
   updateSessionBadge({ authenticated: false });
+  applySessionPermissions({ authenticated: false });
   showLoginGate();
 });
 

@@ -169,6 +169,60 @@ async function initializeDatabase() {
     )
   `);
 
+  await run(`
+    CREATE TABLE IF NOT EXISTS CaixaFechamentos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      usuario TEXT NOT NULL,
+      data_caixa TEXT NOT NULL,
+      aberto_em TEXT NOT NULL,
+      fechado_em TEXT,
+      valor_inicial REAL DEFAULT 0,
+      valor_informado REAL,
+      total_vendas_pagas REAL DEFAULT 0,
+      total_pagamentos REAL DEFAULT 0,
+      total_despesas REAL DEFAULT 0,
+      total_esperado REAL DEFAULT 0,
+      diferenca REAL DEFAULT 0,
+      observacao TEXT,
+      status TEXT DEFAULT 'aberto'
+    )
+  `);
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS FinanceiroContas (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      tipo TEXT NOT NULL,
+      descricao TEXT NOT NULL,
+      pessoa TEXT,
+      categoria TEXT,
+      valor REAL NOT NULL,
+      vencimento TEXT NOT NULL,
+      pago_em TEXT,
+      status TEXT DEFAULT 'pendente',
+      observacao TEXT,
+      usuario TEXT,
+      criado_em TEXT NOT NULL,
+      cancelado_em TEXT,
+      cancelado_motivo TEXT
+    )
+  `);
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS StockMovimentos (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      produto_id INTEGER NOT NULL,
+      produto_nome TEXT NOT NULL,
+      tipo TEXT NOT NULL,
+      quantidade_anterior REAL NOT NULL,
+      quantidade_movimentada REAL NOT NULL,
+      quantidade_nova REAL NOT NULL,
+      motivo TEXT,
+      usuario TEXT,
+      criado_em TEXT NOT NULL,
+      FOREIGN KEY (produto_id) REFERENCES Produtos(id)
+    )
+  `);
+
   await ensureColumn('Clientes', 'ativo', 'INTEGER DEFAULT 1');
   await ensureColumn('Clientes', 'inativado_em', 'TEXT');
   await ensureColumn('Clientes', 'inativado_motivo', 'TEXT');
@@ -201,7 +255,7 @@ function subtractMoney(value, subtractValue) {
   return normalizeMoney(normalizeMoney(value) - normalizeMoney(subtractValue));
 }
 
-async function insertCliente(cliente) {
+async function insertCliente(cliente, meta = {}) {
   const result = await run(
     `INSERT INTO Clientes
       (nome, DataNascimento, cpf, rg, endereco, telefone, email, divida, dataPagamento)
@@ -222,12 +276,13 @@ async function insertCliente(cliente) {
     entidade: 'Clientes',
     entidadeId: result.id,
     acao: 'CRIAR_CLIENTE',
+    usuario: meta.usuario,
     dadosDepois: cliente,
   });
   return result;
 }
 
-async function updateCliente(cliente) {
+async function updateCliente(cliente, meta = {}) {
   const before = await get('SELECT * FROM Clientes WHERE id = ?', [cliente.id]);
   const result = await run(
     `UPDATE Clientes
@@ -251,6 +306,7 @@ async function updateCliente(cliente) {
     entidade: 'Clientes',
     entidadeId: cliente.id,
     acao: 'ALTERAR_CLIENTE',
+    usuario: meta.usuario,
     dadosAntes: before,
     dadosDepois: cliente,
   });
@@ -661,7 +717,8 @@ async function getProdutoByCode(codigo) {
   return get('SELECT * FROM Produtos WHERE ativo = 1 AND codigo = ?', [codigo]);
 }
 
-async function upsertProduto(produto) {
+async function upsertProduto(produto, meta = {}) {
+  const before = produto.id ? await get('SELECT * FROM Produtos WHERE id = ?', [produto.id]) : null;
   const params = [
     produto.nome,
     produto.codigo || null,
@@ -678,21 +735,154 @@ async function upsertProduto(produto) {
   ];
 
   if (produto.id) {
-    return run(
+    const result = await run(
       `UPDATE Produtos
-        SET nome = ?, codigo = ?, preco_venda = ?, preco_custo = ?, quantidade = ?,
+        SET nome = ?, codigo = ?, preco_venda = ?, preco_custo = ?,
             controlar_estoque = ?, categoria = ?, fornecedor = ?, unidade = ?,
             estoque_minimo = ?, localizacao = ?, observacao = ?
         WHERE id = ?`,
-      [...params, produto.id],
+      [
+        params[0],
+        params[1],
+        params[2],
+        params[3],
+        params[5],
+        params[6],
+        params[7],
+        params[8],
+        params[9],
+        params[10],
+        params[11],
+        produto.id,
+      ],
     );
+    await writeAuditLog({
+      entidade: 'Produtos',
+      entidadeId: produto.id,
+      acao: 'ALTERAR_PRODUTO',
+      usuario: meta.usuario,
+      dadosAntes: before,
+      dadosDepois: { ...produto, quantidade: before ? before.quantidade : produto.quantidade },
+    });
+    return result;
   }
 
-  return run(
+  const result = await run(
     `INSERT INTO Produtos
       (nome, codigo, preco_venda, preco_custo, quantidade, controlar_estoque,
        categoria, fornecedor, unidade, estoque_minimo, localizacao, observacao)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    params,
+  );
+  await writeAuditLog({
+    entidade: 'Produtos',
+    entidadeId: result.id,
+    acao: 'CRIAR_PRODUTO',
+    usuario: meta.usuario,
+    dadosDepois: produto,
+  });
+  return result;
+}
+
+async function moveProdutoStock({ produtoId, tipo, quantidade, motivo }, meta = {}) {
+  const produto = await get('SELECT * FROM Produtos WHERE id = ? AND ativo = 1', [produtoId]);
+  if (!produto) {
+    throw new Error('Produto nao encontrado.');
+  }
+  if (Number(produto.controlar_estoque) !== 1) {
+    throw new Error('Este produto nao esta com controle de estoque ativo.');
+  }
+
+  const currentQuantity = Number(produto.quantidade || 0);
+  const movementQuantity = Number(quantidade || 0);
+  if (!Number.isFinite(movementQuantity) || movementQuantity < 0) {
+    throw new Error('Quantidade invalida.');
+  }
+
+  let nextQuantity = currentQuantity;
+  if (tipo === 'entrada') {
+    nextQuantity = currentQuantity + movementQuantity;
+  } else if (tipo === 'saida') {
+    nextQuantity = currentQuantity - movementQuantity;
+  } else if (tipo === 'ajuste') {
+    nextQuantity = movementQuantity;
+  } else {
+    throw new Error('Tipo de movimentacao invalido.');
+  }
+
+  if (nextQuantity < 0) {
+    throw new Error('A movimentacao deixaria o estoque negativo.');
+  }
+
+  await run('BEGIN TRANSACTION');
+  try {
+    await run('UPDATE Produtos SET quantidade = ? WHERE id = ?', [nextQuantity, produtoId]);
+    const result = await run(
+      `INSERT INTO StockMovimentos
+        (produto_id, produto_nome, tipo, quantidade_anterior, quantidade_movimentada,
+         quantidade_nova, motivo, usuario, criado_em)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        produtoId,
+        produto.nome,
+        tipo,
+        currentQuantity,
+        movementQuantity,
+        nextQuantity,
+        motivo || null,
+        meta.usuario || null,
+        nowIsoDateTime(),
+      ],
+    );
+    await writeAuditLog({
+      entidade: 'StockMovimentos',
+      entidadeId: result.id,
+      acao: 'MOVIMENTAR_ESTOQUE',
+      motivo,
+      usuario: meta.usuario,
+      dadosAntes: produto,
+      dadosDepois: {
+        produtoId,
+        produtoNome: produto.nome,
+        tipo,
+        quantidadeAnterior: currentQuantity,
+        quantidadeMovimentada: movementQuantity,
+        quantidadeNova: nextQuantity,
+      },
+    });
+    await run('COMMIT');
+    return { moved: true, id: result.id, quantidadeNova: nextQuantity };
+  } catch (err) {
+    await run('ROLLBACK');
+    throw err;
+  }
+}
+
+async function listProdutoStockMovements({ produtoId, dataInicio, dataFim, limit = 200 }) {
+  const filters = [];
+  const params = [];
+
+  if (produtoId) {
+    filters.push('produto_id = ?');
+    params.push(produtoId);
+  }
+  if (dataInicio) {
+    filters.push('DATE(criado_em) >= ?');
+    params.push(dataInicio);
+  }
+  if (dataFim) {
+    filters.push('DATE(criado_em) <= ?');
+    params.push(dataFim);
+  }
+
+  params.push(Math.min(Number(limit) || 200, 1000));
+
+  return all(
+    `SELECT *
+      FROM StockMovimentos
+      ${filters.length ? `WHERE ${filters.join(' AND ')}` : ''}
+      ORDER BY criado_em DESC, id DESC
+      LIMIT ?`,
     params,
   );
 }
@@ -707,8 +897,23 @@ async function listLowStockProdutos() {
   );
 }
 
-async function deactivateProduto(id) {
-  return run('UPDATE Produtos SET ativo = 0 WHERE id = ?', [id]);
+async function deactivateProduto(id, meta = {}) {
+  const produto = await get('SELECT * FROM Produtos WHERE id = ?', [id]);
+  if (!produto || Number(produto.ativo) === 0) {
+    return { deleted: false };
+  }
+
+  const result = await run('UPDATE Produtos SET ativo = 0 WHERE id = ?', [id]);
+  await writeAuditLog({
+    entidade: 'Produtos',
+    entidadeId: id,
+    acao: 'DESATIVAR_PRODUTO',
+    motivo: meta.motivo,
+    usuario: meta.usuario,
+    dadosAntes: produto,
+  });
+
+  return { deleted: result.changes > 0 };
 }
 
 async function insertDespesa(despesa, meta = {}) {
@@ -843,10 +1048,307 @@ async function listAuditLog({ dataInicio, dataFim, usuario, acao, entidade, limi
   );
 }
 
+function todayDate() {
+  return new Date().toISOString().split('T')[0];
+}
+
+async function getCashTotals(usuario, dataCaixa) {
+  const [vendasRow, pagamentosRow, despesasRow] = await Promise.all([
+    get(
+      `SELECT COALESCE(SUM(preco), 0) AS total
+        FROM vendas
+        WHERE usuario = ?
+          AND DATE(dataVenda) = ?
+          AND metodoPagamento != 'Fiado'
+          AND COALESCE(cancelado, 0) = 0`,
+      [usuario, dataCaixa],
+    ),
+    get(
+      `SELECT COALESCE(SUM(valor_pago), 0) AS total
+        FROM Pagamentos
+        WHERE usuario = ? AND DATE(data_pagamento) = ? AND COALESCE(cancelado, 0) = 0`,
+      [usuario, dataCaixa],
+    ),
+    get(
+      `SELECT COALESCE(SUM(valor), 0) AS total
+        FROM Despesas
+        WHERE usuario = ? AND DATE(data_despesa) = ? AND COALESCE(cancelado, 0) = 0`,
+      [usuario, dataCaixa],
+    ),
+  ]);
+
+  return {
+    totalVendasPagas: normalizeMoney(vendasRow.total),
+    totalPagamentos: normalizeMoney(pagamentosRow.total),
+    totalDespesas: normalizeMoney(despesasRow.total),
+  };
+}
+
+async function getOpenCashSession(usuario) {
+  return get(
+    `SELECT *
+      FROM CaixaFechamentos
+      WHERE usuario = ? AND status = 'aberto'
+      ORDER BY id DESC
+      LIMIT 1`,
+    [usuario],
+  );
+}
+
+async function openCashSession({ usuario, valorInicial }) {
+  const current = await getOpenCashSession(usuario);
+  if (current) {
+    throw new Error('Este usuario ja possui um caixa aberto.');
+  }
+
+  const dataCaixa = todayDate();
+  const initialValue = normalizeMoney(valorInicial);
+  const result = await run(
+    `INSERT INTO CaixaFechamentos (usuario, data_caixa, aberto_em, valor_inicial, status)
+      VALUES (?, ?, ?, ?, 'aberto')`,
+    [usuario, dataCaixa, nowIsoDateTime(), initialValue],
+  );
+
+  await writeAuditLog({
+    entidade: 'CaixaFechamentos',
+    entidadeId: result.id,
+    acao: 'ABRIR_CAIXA',
+    usuario,
+    dadosDepois: { usuario, dataCaixa, valorInicial: initialValue },
+  });
+
+  return { id: result.id, usuario, data_caixa: dataCaixa, valor_inicial: initialValue, status: 'aberto' };
+}
+
+async function closeCashSession(id, { usuario, valorInformado, observacao }) {
+  const session = await get('SELECT * FROM CaixaFechamentos WHERE id = ?', [id]);
+  if (!session || session.status !== 'aberto') {
+    return { closed: false };
+  }
+  if (session.usuario !== usuario) {
+    throw new Error('Este caixa pertence a outro usuario.');
+  }
+
+  const totals = await getCashTotals(session.usuario, session.data_caixa);
+  const valorInicial = normalizeMoney(session.valor_inicial);
+  const counted = normalizeMoney(valorInformado);
+  const expected = normalizeMoney(
+    valorInicial + totals.totalVendasPagas + totals.totalPagamentos - totals.totalDespesas,
+  );
+  const difference = normalizeMoney(counted - expected);
+
+  await run(
+    `UPDATE CaixaFechamentos
+      SET fechado_em = ?,
+          valor_informado = ?,
+          total_vendas_pagas = ?,
+          total_pagamentos = ?,
+          total_despesas = ?,
+          total_esperado = ?,
+          diferenca = ?,
+          observacao = ?,
+          status = 'fechado'
+      WHERE id = ?`,
+    [
+      nowIsoDateTime(),
+      counted,
+      totals.totalVendasPagas,
+      totals.totalPagamentos,
+      totals.totalDespesas,
+      expected,
+      difference,
+      observacao || null,
+      id,
+    ],
+  );
+
+  await writeAuditLog({
+    entidade: 'CaixaFechamentos',
+    entidadeId: id,
+    acao: 'FECHAR_CAIXA',
+    usuario,
+    dadosAntes: session,
+    dadosDepois: { ...totals, valorInformado: counted, totalEsperado: expected, diferenca: difference },
+  });
+
+  return {
+    closed: true,
+    id,
+    ...totals,
+    valorInicial,
+    valorInformado: counted,
+    totalEsperado: expected,
+    diferenca: difference,
+  };
+}
+
+async function listCashSessions({ dataInicio, dataFim, usuario, limit = 200 }) {
+  const filters = [];
+  const params = [];
+
+  if (dataInicio) {
+    filters.push('DATE(data_caixa) >= ?');
+    params.push(dataInicio);
+  }
+  if (dataFim) {
+    filters.push('DATE(data_caixa) <= ?');
+    params.push(dataFim);
+  }
+  if (usuario) {
+    filters.push('usuario LIKE ?');
+    params.push(`%${usuario}%`);
+  }
+
+  params.push(Math.min(Number(limit) || 200, 1000));
+
+  return all(
+    `SELECT *
+      FROM CaixaFechamentos
+      ${filters.length ? `WHERE ${filters.join(' AND ')}` : ''}
+      ORDER BY data_caixa DESC, id DESC
+      LIMIT ?`,
+    params,
+  );
+}
+
+async function createFinancialAccount(conta, meta = {}) {
+  const tipo = conta.tipo === 'receber' ? 'receber' : 'pagar';
+  const result = await run(
+    `INSERT INTO FinanceiroContas
+      (tipo, descricao, pessoa, categoria, valor, vencimento, observacao, usuario, criado_em, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendente')`,
+    [
+      tipo,
+      conta.descricao,
+      conta.pessoa || null,
+      conta.categoria || null,
+      normalizeMoney(conta.valor),
+      conta.vencimento,
+      conta.observacao || null,
+      meta.usuario || null,
+      nowIsoDateTime(),
+    ],
+  );
+
+  await writeAuditLog({
+    entidade: 'FinanceiroContas',
+    entidadeId: result.id,
+    acao: tipo === 'pagar' ? 'CRIAR_CONTA_PAGAR' : 'CRIAR_CONTA_RECEBER',
+    usuario: meta.usuario,
+    dadosDepois: conta,
+  });
+
+  return result;
+}
+
+async function listFinancialAccounts({ tipo, status, dataInicio, dataFim, limit = 300 }) {
+  const filters = [];
+  const params = [];
+
+  if (tipo) {
+    filters.push('tipo = ?');
+    params.push(tipo);
+  }
+  if (status) {
+    filters.push('status = ?');
+    params.push(status);
+  }
+  if (dataInicio) {
+    filters.push('DATE(vencimento) >= ?');
+    params.push(dataInicio);
+  }
+  if (dataFim) {
+    filters.push('DATE(vencimento) <= ?');
+    params.push(dataFim);
+  }
+
+  params.push(Math.min(Number(limit) || 300, 1000));
+
+  return all(
+    `SELECT *
+      FROM FinanceiroContas
+      ${filters.length ? `WHERE ${filters.join(' AND ')}` : ''}
+      ORDER BY
+        CASE status WHEN 'pendente' THEN 0 WHEN 'pago' THEN 1 ELSE 2 END,
+        vencimento ASC,
+        id DESC
+      LIMIT ?`,
+    params,
+  );
+}
+
+async function getDatabaseHealth() {
+  const integrity = await get('PRAGMA integrity_check');
+  const [clientes, vendas, pagamentos, produtos, auditoria] = await Promise.all([
+    get('SELECT COUNT(*) AS total FROM Clientes'),
+    get('SELECT COUNT(*) AS total FROM vendas'),
+    get('SELECT COUNT(*) AS total FROM Pagamentos'),
+    get('SELECT COUNT(*) AS total FROM Produtos'),
+    get('SELECT COUNT(*) AS total FROM AuditLog'),
+  ]);
+
+  return {
+    databasePath,
+    integrity: integrity ? Object.values(integrity)[0] : 'sem resposta',
+    counts: {
+      clientes: clientes.total,
+      vendas: vendas.total,
+      pagamentos: pagamentos.total,
+      produtos: produtos.total,
+      auditoria: auditoria.total,
+    },
+  };
+}
+
+async function markFinancialAccountPaid(id, meta = {}) {
+  const conta = await get('SELECT * FROM FinanceiroContas WHERE id = ?', [id]);
+  if (!conta || conta.status !== 'pendente') {
+    return { paid: false };
+  }
+
+  await run(
+    "UPDATE FinanceiroContas SET status = 'pago', pago_em = ? WHERE id = ?",
+    [todayDate(), id],
+  );
+  await writeAuditLog({
+    entidade: 'FinanceiroContas',
+    entidadeId: id,
+    acao: conta.tipo === 'pagar' ? 'PAGAR_CONTA' : 'RECEBER_CONTA',
+    usuario: meta.usuario,
+    dadosAntes: conta,
+    dadosDepois: { pagoEm: todayDate() },
+  });
+
+  return { paid: true };
+}
+
+async function cancelFinancialAccount(id, meta = {}) {
+  const conta = await get('SELECT * FROM FinanceiroContas WHERE id = ?', [id]);
+  if (!conta || conta.status === 'cancelado') {
+    return { cancelled: false };
+  }
+
+  await run(
+    "UPDATE FinanceiroContas SET status = 'cancelado', cancelado_em = ?, cancelado_motivo = ? WHERE id = ?",
+    [nowIsoDateTime(), meta.motivo || 'Cancelado pelo usuario', id],
+  );
+  await writeAuditLog({
+    entidade: 'FinanceiroContas',
+    entidadeId: id,
+    acao: 'CANCELAR_CONTA',
+    motivo: meta.motivo,
+    usuario: meta.usuario,
+    dadosAntes: conta,
+  });
+
+  return { cancelled: true };
+}
+
 module.exports = {
   databasePath,
   db,
   initializeDatabase,
+  writeAuditLog,
   insertCliente,
   updateCliente,
   listClientes,
@@ -878,6 +1380,8 @@ module.exports = {
   searchProdutos,
   getProdutoByCode,
   upsertProduto,
+  moveProdutoStock,
+  listProdutoStockMovements,
   listLowStockProdutos,
   deactivateProduto,
   insertDespesa,
@@ -887,4 +1391,14 @@ module.exports = {
   listBirthdayClientes,
   listClientesWithPaymentStatus,
   listAuditLog,
+  getCashTotals,
+  getOpenCashSession,
+  openCashSession,
+  closeCashSession,
+  listCashSessions,
+  createFinancialAccount,
+  listFinancialAccounts,
+  markFinancialAccountPaid,
+  cancelFinancialAccount,
+  getDatabaseHealth,
 };
