@@ -14,6 +14,7 @@ const defaultPermissions = {
     cash: true,
     finance: true,
     administration: true,
+    operationalCorrections: true,
     criticalActions: true,
   },
   staff: {
@@ -26,6 +27,7 @@ const defaultPermissions = {
     cash: true,
     finance: false,
     administration: false,
+    operationalCorrections: true,
     criticalActions: false,
   },
 };

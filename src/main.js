@@ -1,11 +1,26 @@
 const { BrowserWindow, app } = require('electron');
-const { db, initializeDatabase } = require('./main/database');
+const { db, initializeDatabase, writeAuditLog } = require('./main/database');
 const { registerIpcHandlers } = require('./main/ipc');
 const { showBirthdayAlerts } = require('./main/notifications');
 const { createMainWindow } = require('./main/window');
+const { automaticBackup } = require('./main/backup');
+const { loadAppConfig } = require('./main/config');
 
 async function bootstrap() {
   await initializeDatabase();
+  automaticBackup(loadAppConfig().backup)
+    .then(async (result) => {
+      if (!result.skipped) {
+        await writeAuditLog({
+          entidade: 'Backup',
+          acao: 'GERAR_BACKUP_AUTOMATICO',
+          dadosDepois: { backupPath: result.backupPath },
+        });
+      }
+    })
+    .catch((err) => {
+      console.error('Erro ao gerar backup automatico:', err);
+    });
   registerIpcHandlers();
 
   const mainWindow = createMainWindow();

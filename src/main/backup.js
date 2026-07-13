@@ -1,7 +1,10 @@
 const fs = require('fs/promises');
+const fsSync = require('fs');
 const path = require('path');
 const { dialog } = require('electron');
 const { databasePath } = require('./database');
+
+const projectRoot = path.resolve(__dirname, '..', '..');
 
 function formatDateForFile(date = new Date()) {
   const year = date.getFullYear();
@@ -40,4 +43,54 @@ async function backupDatabase(parentWindow) {
   return { canceled: false, backupPath };
 }
 
-module.exports = { backupDatabase };
+async function backupDatabaseToFolder(destinationFolder, label = `backup-${formatDateForFile()}`) {
+  const backupFolder = path.join(destinationFolder, label);
+  await fs.mkdir(backupFolder, { recursive: true });
+
+  const backupPath = path.join(backupFolder, 'Banco_dados.db');
+  await fs.copyFile(databasePath, backupPath);
+  return backupPath;
+}
+
+async function cleanupOldAutomaticBackups(destinationFolder, keepLast = 30) {
+  if (!fsSync.existsSync(destinationFolder)) {
+    return;
+  }
+
+  const entries = await fs.readdir(destinationFolder, { withFileTypes: true });
+  const folders = entries
+    .filter((entry) => entry.isDirectory() && entry.name.startsWith('auto-'))
+    .map((entry) => ({
+      name: entry.name,
+      fullPath: path.join(destinationFolder, entry.name),
+    }))
+    .sort((a, b) => b.name.localeCompare(a.name));
+
+  const toDelete = folders.slice(Math.max(Number(keepLast) || 30, 1));
+  for (const folder of toDelete) {
+    await fs.rm(folder.fullPath, { recursive: true, force: true });
+  }
+}
+
+async function automaticBackup(options = {}) {
+  if (options.enabled === false) {
+    return { skipped: true, reason: 'disabled' };
+  }
+
+  const destinationFolder = options.folder
+    ? path.resolve(projectRoot, options.folder)
+    : path.join(projectRoot, 'backups', 'automaticos');
+  const today = new Date().toISOString().split('T')[0];
+  const marker = path.join(destinationFolder, `auto-${today}`);
+  const backupPath = path.join(marker, 'Banco_dados.db');
+
+  if (fsSync.existsSync(backupPath)) {
+    return { skipped: true, reason: 'already_exists', backupPath };
+  }
+
+  const createdPath = await backupDatabaseToFolder(destinationFolder, `auto-${today}`);
+  await cleanupOldAutomaticBackups(destinationFolder, options.keepLast || 30);
+  return { skipped: false, backupPath: createdPath };
+}
+
+module.exports = { backupDatabase, automaticBackup };

@@ -12,6 +12,10 @@ const paymentHint = document.getElementById('paymentHint');
 const historyButton = document.getElementById('historico');
 let selectedClient = null;
 let canUseCriticalActions = false;
+const historyVisibleCount = {
+  vendas: 5,
+  pagamentos: 5,
+};
 
 function formatCurrency(value) {
   return Number(value || 0).toLocaleString('pt-BR', {
@@ -225,7 +229,7 @@ async function showClientes() {
   renderClientList(clientes);
 }
 
-function renderHistoryGroup(title, rows, formatter) {
+function renderHistoryGroup(title, rows, formatter, type) {
   const group = document.createElement('div');
   group.className = 'history-group';
   const heading = document.createElement('h3');
@@ -240,12 +244,43 @@ function renderHistoryGroup(title, rows, formatter) {
     return group;
   }
 
-  rows.slice(0, 20).forEach((row) => {
+  const visibleCount = historyVisibleCount[type] || 5;
+  rows.slice(0, visibleCount).forEach((row) => {
     const item = document.createElement('div');
     item.className = 'history-row';
     item.textContent = formatter(row);
     group.appendChild(item);
   });
+
+  if (rows.length > visibleCount) {
+    const moreButton = document.createElement('button');
+    moreButton.type = 'button';
+    moreButton.className = 'secondary history-more';
+    moreButton.textContent = `Ver mais ${rows.length - visibleCount}`;
+    moreButton.addEventListener('click', () => {
+      historyVisibleCount[type] += 10;
+      loadHistory().catch((err) => {
+        console.error(err);
+        showModalMessage('Nao foi possivel carregar mais historico.');
+      });
+    });
+    group.appendChild(moreButton);
+  }
+
+  if (visibleCount > 5) {
+    const lessButton = document.createElement('button');
+    lessButton.type = 'button';
+    lessButton.className = 'secondary history-more';
+    lessButton.textContent = 'Ver menos';
+    lessButton.addEventListener('click', () => {
+      historyVisibleCount[type] = 5;
+      loadHistory().catch((err) => {
+        console.error(err);
+        showModalMessage('Nao foi possivel reduzir historico.');
+      });
+    });
+    group.appendChild(lessButton);
+  }
 
   return group;
 }
@@ -261,12 +296,13 @@ async function loadHistory() {
     ipcRenderer.invoke('pagamentos:list-by-cliente', selectedClient.nome),
   ]);
 
-  historyBox.appendChild(renderHistoryGroup('Compras', vendas, (venda) => (
+  historyBox.classList.add('history-columns');
+  historyBox.appendChild(renderHistoryGroup(`Compras (${vendas.length})`, vendas, (venda) => (
     `${formatDate(venda.dataVenda)} | ${formatCurrency(venda.preco)} | ${venda.metodoPagamento}\n${venda.descricao || ''}`
-  )));
-  historyBox.appendChild(renderHistoryGroup('Pagamentos', pagamentos, (pagamento) => (
+  ), 'vendas'));
+  historyBox.appendChild(renderHistoryGroup(`Pagamentos (${pagamentos.length})`, pagamentos, (pagamento) => (
     `${formatDate(pagamento.data_pagamento)} | pago ${formatCurrency(pagamento.valor_pago)} | restante ${formatCurrency(pagamento.divida_restante)}`
-  )));
+  ), 'pagamentos'));
 }
 
 async function registerPayment() {

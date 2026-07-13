@@ -30,6 +30,11 @@ const defaultConfig = {
     stockControl: false,
     barcode: false,
   },
+  backup: {
+    automaticEnabled: true,
+    automaticFolder: 'backups/automaticos',
+    keepLast: 30,
+  },
   businessProfile: {
     level: 'simple',
     allowManualItems: true,
@@ -46,6 +51,7 @@ function mergeConfig(base, override) {
     auth: { ...base.auth, ...override.auth },
     theme: { ...base.theme, ...override.theme },
     modules: { ...base.modules, ...override.modules },
+    backup: { ...base.backup, ...override.backup },
     businessProfile: { ...base.businessProfile, ...override.businessProfile },
   };
 }

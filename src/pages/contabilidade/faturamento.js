@@ -304,6 +304,7 @@ function actionLabel(action) {
     ALTERAR_CONFIGURACOES: 'Alterou configuracoes',
     ALTERAR_LOGO: 'Alterou logo',
     GERAR_BACKUP: 'Gerou backup',
+    GERAR_BACKUP_AUTOMATICO: 'Gerou backup automatico',
   };
   return labels[action] || action;
 }
@@ -430,6 +431,7 @@ const permissionFields = {
   cash: 'permCash',
   finance: 'permFinance',
   administration: 'permAdministration',
+  operationalCorrections: 'permOperationalCorrections',
   criticalActions: 'permCriticalActions',
 };
 
@@ -444,6 +446,7 @@ const permissionDefaults = {
     cash: true,
     finance: true,
     administration: true,
+    operationalCorrections: true,
     criticalActions: true,
   },
   staff: {
@@ -456,6 +459,7 @@ const permissionDefaults = {
     cash: true,
     finance: false,
     administration: false,
+    operationalCorrections: true,
     criticalActions: false,
   },
 };
@@ -603,6 +607,8 @@ function fillSettings(config) {
   document.getElementById('configLogo').value = config.company.logo || '';
   document.getElementById('configBusinessLevel').value = config.businessProfile.level || 'simple';
   document.getElementById('configSessionTimeout').value = Number(config.auth.sessionTimeoutMinutes || 30);
+  document.getElementById('configAutoBackup').checked = config.backup ? config.backup.automaticEnabled !== false : true;
+  document.getElementById('configBackupKeepLast').value = config.backup ? Number(config.backup.keepLast || 30) : 30;
   document.getElementById('moduleManualSales').checked = Boolean(config.modules.manualSales);
   document.getElementById('moduleClients').checked = Boolean(config.modules.clients);
   document.getElementById('modulePayments').checked = Boolean(config.modules.payments);
@@ -633,6 +639,12 @@ function collectSettings() {
     auth: {
       ...currentConfig.auth,
       sessionTimeoutMinutes: Number(document.getElementById('configSessionTimeout').value || 30),
+    },
+    backup: {
+      ...(currentConfig.backup || {}),
+      automaticEnabled: document.getElementById('configAutoBackup').checked,
+      automaticFolder: (currentConfig.backup && currentConfig.backup.automaticFolder) || 'backups/automaticos',
+      keepLast: Number(document.getElementById('configBackupKeepLast').value || 30),
     },
     modules: {
       ...currentConfig.modules,

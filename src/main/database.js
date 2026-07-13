@@ -518,7 +518,7 @@ async function registerPayment({ nomePagador, dividaAnterior, valorPagamento }, 
     throw new Error('Valor de pagamento invalido para a divida atual.');
   }
   const dividaRestante = Math.max(subtractMoney(dividaAtual, valorPago), 0);
-  const dataPagamento = new Date().toISOString().split('T')[0];
+  const dataPagamento = todayDate();
 
   await run('BEGIN TRANSACTION');
   try {
@@ -999,9 +999,9 @@ async function listBirthdayClientes(monthDay) {
 
 async function listClientesWithPaymentStatus() {
   return all(`
-    SELECT c.nome, c.divida,
+    SELECT c.nome, c.telefone, c.divida, c.dataPagamento,
       COALESCE(MAX(p.data_pagamento), NULL) AS ultima_data_pagamento,
-      COALESCE(MAX(v.dataVenda), NULL) AS ultima_data_compra
+      COALESCE(MAX(CASE WHEN v.metodoPagamento = 'Fiado' THEN v.dataVenda END), NULL) AS ultima_compra_fiado
     FROM Clientes c
     LEFT JOIN Pagamentos p ON c.nome = p.nome_pagador AND COALESCE(p.cancelado, 0) = 0
     LEFT JOIN vendas v ON c.nome = v.cliente AND COALESCE(v.cancelado, 0) = 0

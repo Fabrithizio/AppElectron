@@ -131,6 +131,17 @@ function daysSince(dateString) {
   return Math.floor((today - date) / (1000 * 60 * 60 * 24));
 }
 
+function localDateString(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function isUsableReferenceDate(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value || '') && value <= localDateString();
+}
+
 function csvCell(value) {
   const text = String(value ?? '');
   return `"${text.replace(/"/g, '""')}"`;
@@ -174,42 +185,70 @@ function formatDelay(days) {
 
 function getReferenceDate(row) {
   // Qualquer pagamento, mesmo parcial, reinicia a contagem de atraso.
-  // Se nunca pagou, a contagem parte da ultima compra fiada registrada.
-  return row.ultima_data_pagamento || row.ultima_data_compra || null;
+  // Se houver compra fiada depois do pagamento, a nova compra vira a referencia.
+  const dates = [row.ultima_data_pagamento, row.dataPagamento, row.ultima_compra_fiado]
+    .filter(isUsableReferenceDate)
+    .sort();
+  return dates.length ? dates[dates.length - 1] : null;
 }
 
 function getOverdueRows(rows) {
+  return getCollectionRows(rows)
+    .filter((row) => row.statusCobranca === 'atrasado');
+}
+
+function getCollectionRows(rows) {
   return rows
     .filter((row) => Number(row.divida) > 0)
     .map((row) => {
       const referencia = getReferenceDate(row);
       const atrasoDias = daysSince(referencia);
+      let statusCobranca = 'sem_data';
+      if (atrasoDias !== null && atrasoDias >= overdueThresholdDays) {
+        statusCobranca = 'atrasado';
+      } else if (atrasoDias !== null && atrasoDias >= 60) {
+        statusCobranca = 'atencao';
+      } else if (atrasoDias !== null) {
+        statusCobranca = 'em_dia';
+      }
+
       return {
         ...row,
         referencia,
         atrasoDias,
         atrasoTexto: formatDelay(atrasoDias),
+        statusCobranca,
       };
     })
-    .filter((row) => row.atrasoDias !== null && row.atrasoDias >= overdueThresholdDays)
-    .sort((a, b) => b.atrasoDias - a.atrasoDias);
+    .sort((a, b) => {
+      const order = { atrasado: 0, atencao: 1, sem_data: 2, em_dia: 3 };
+      const statusDiff = order[a.statusCobranca] - order[b.statusCobranca];
+      if (statusDiff !== 0) {
+        return statusDiff;
+      }
+      return Number(b.atrasoDias || 0) - Number(a.atrasoDias || 0);
+    });
 }
 
 async function handleVerifyPayments(event) {
   const rows = await listClientesWithPaymentStatus();
-  const overdueRows = getOverdueRows(rows);
+  const collectionRows = getCollectionRows(rows);
+  const overdueRows = collectionRows.filter((row) => row.statusCobranca === 'atrasado');
+  const attentionRows = collectionRows.filter((row) => row.statusCobranca === 'atencao');
 
   if (overdueRows.length === 0) {
     await dialog.showMessageBox(getSenderWindow(event), {
-      type: 'info',
+      type: attentionRows.length ? 'warning' : 'info',
       title: 'Verificacao de Pagamentos',
-      message: 'Nao ha clientes com divida vencida ha 3 meses ou mais.',
+      message: attentionRows.length
+        ? `Nao ha clientes com 3 meses ou mais, mas ha clientes chegando perto:\n> ${attentionRows.slice(0, 12).map((row) => `${row.nome.toUpperCase()} - ${formatCurrency(row.divida)} - ${row.atrasoTexto}`).join('\n> ')}`
+        : 'Nao ha clientes com divida vencida ha 3 meses ou mais.',
     });
     return;
   }
 
   const overdueNames = overdueRows.map((row) => (
-    `${row.nome.toUpperCase()} - ${formatCurrency(row.divida)} - atraso: ${row.atrasoTexto}`
+    `${row.nome.toUpperCase()} - ${formatCurrency(row.divida)} - atraso: ${row.atrasoTexto} - referencia: ${row.referencia || 'sem data'}`
   ));
 
   await dialog.showMessageBox(getSenderWindow(event), {
@@ -449,7 +488,7 @@ function registerIpcHandlers() {
     return listVendasByDate(date);
   });
   ipcMain.handle('vendas:delete', async (event, id) => {
-    requirePermission('criticalActions');
+    requirePermission('operationalCorrections');
     const ok = await confirmCritical(getSenderWindow(event), {
       buttons: ['Cancelar', 'Cancelar venda'],
       title: 'Operacao financeira critica',
@@ -504,7 +543,7 @@ function registerIpcHandlers() {
     return listPagamentosByInterval(dataInicio, dataFim);
   });
   ipcMain.handle('pagamentos:delete', async (event, id) => {
-    requirePermission('criticalActions');
+    requirePermission('operationalCorrections');
     const ok = await confirmCritical(getSenderWindow(event), {
       buttons: ['Cancelar', 'Cancelar pagamento'],
       title: 'Operacao financeira critica',
@@ -686,7 +725,7 @@ function registerIpcHandlers() {
   });
 
   ipcMain.handle('dashboard:resumo', async () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = localDateString();
     const paymentRows = await listClientesWithPaymentStatus();
     const clientesAtrasados = getOverdueRows(paymentRows).length;
 
@@ -700,6 +739,40 @@ function registerIpcHandlers() {
       quantidadeVendasHoje,
       clientesComDivida,
       clientesAtrasados,
+    };
+  });
+
+  ipcMain.handle('hoje:resumo', async () => {
+    const user = requireLogin();
+    const today = localDateString();
+    const monthDay = today.slice(5);
+    const paymentRows = await listClientesWithPaymentStatus();
+    const cobrancas = getCollectionRows(paymentRows);
+    const clientesParaCobrar = cobrancas
+      .filter((row) => ['atrasado', 'atencao', 'sem_data'].includes(row.statusCobranca))
+      .slice(0, 12);
+
+    const [quantidadeVendasHoje, aniversariantes] = await Promise.all([
+      countVendasByDate(today),
+      listBirthdayClientes(monthDay),
+    ]);
+
+    const estoqueBaixo = user.permissions && user.permissions.products
+      ? await listLowStockProdutos()
+      : [];
+    const caixaAberto = user.permissions && user.permissions.cash
+      ? await getOpenCashSession(user.username)
+      : null;
+
+    return {
+      data: today,
+      quantidadeVendasHoje,
+      caixaAberto: Boolean(caixaAberto),
+      clientesParaCobrar,
+      totalAtrasados: cobrancas.filter((row) => row.statusCobranca === 'atrasado').length,
+      totalAtencao: cobrancas.filter((row) => row.statusCobranca === 'atencao').length,
+      aniversariantes,
+      estoqueBaixo: estoqueBaixo.slice(0, 12),
     };
   });
 

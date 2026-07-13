@@ -111,6 +111,14 @@ button.secondary {
   overflow: auto;
 }
 
+.history-list.history-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  max-height: none;
+  overflow: visible;
+}
+
 .suggestions div,
 .client-item {
   padding: 8px 9px;
@@ -207,8 +215,23 @@ button.secondary {
   margin-top: 10px;
 }
 
+.history-columns .history-group {
+  min-width: 0;
+  max-height: 360px;
+  overflow: auto;
+  padding: 10px;
+  border: 1px solid #d7ddda;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
 .history-group h3 {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   margin-bottom: 8px;
+  padding: 2px 0 8px;
+  background: #ffffff;
   font-size: 15px;
 }
 
@@ -220,6 +243,11 @@ button.secondary {
   background: #f8faf9;
   font-size: 13px;
   white-space: pre-line;
+}
+
+.history-more {
+  width: 100%;
+  margin-top: 6px;
 }
 
 .modal {
@@ -249,6 +277,10 @@ button.secondary {
 
 @media (max-width: 1050px) {
   .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .history-list.history-columns {
     grid-template-columns: 1fr;
   }
 }

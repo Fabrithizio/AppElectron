@@ -192,6 +192,7 @@
           <label><input type="checkbox" id="permCash"> Caixa</label>
           <label><input type="checkbox" id="permFinance"> Financeiro</label>
           <label><input type="checkbox" id="permAdministration"> Administracao</label>
+          <label><input type="checkbox" id="permOperationalCorrections"> Corrigir vendas/pagamentos</label>
           <label><input type="checkbox" id="permCriticalActions"> Cancelamentos criticos</label>
         </fieldset>
       </form>
@@ -267,9 +268,14 @@
         </fieldset>
         <fieldset>
           <legend>Rotina de seguranca</legend>
+          <label><input type="checkbox" id="configAutoBackup"> Backup automatico diario</label>
           <label>
             Tempo de sessao em minutos
             <input type="number" id="configSessionTimeout" min="5" max="480" step="5">
+          </label>
+          <label>
+            Manter ultimos backups automaticos
+            <input type="number" id="configBackupKeepLast" min="1" max="365" step="1">
           </label>
         </fieldset>
         <button type="submit">Salvar configuracoes</button>

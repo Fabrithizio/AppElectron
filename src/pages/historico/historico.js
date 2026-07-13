@@ -7,7 +7,7 @@ const tabVendas = document.getElementById('tabVendas');
 const tabPagamentos = document.getElementById('tabPagamentos');
 let currentType = 'vendas';
 let currentExport = { headers: [], rows: [] };
-let canUseCriticalActions = false;
+let canUseOperationalCorrections = false;
 
 function isoDate(date) {
   return date.toISOString().split('T')[0];
@@ -76,7 +76,7 @@ function validateFilters() {
 }
 
 function renderSales(vendas) {
-  renderHeader(canUseCriticalActions
+  renderHeader(canUseOperationalCorrections
     ? ['ID', 'Data', 'Cliente', 'Metodo', 'Descricao', 'Valor', 'Cancelar']
     : ['ID', 'Data', 'Cliente', 'Metodo', 'Descricao', 'Valor']);
   tbody.innerHTML = '';
@@ -101,7 +101,7 @@ function renderSales(vendas) {
     row.insertCell().textContent = venda.descricao || '-';
     row.insertCell().textContent = formatCurrency(venda.preco);
 
-    if (canUseCriticalActions) {
+    if (canUseOperationalCorrections) {
       const actions = row.insertCell();
       const button = document.createElement('button');
       button.className = 'delete-button';
@@ -120,7 +120,7 @@ function renderSales(vendas) {
 }
 
 function renderPayments(pagamentos) {
-  renderHeader(canUseCriticalActions
+  renderHeader(canUseOperationalCorrections
     ? ['ID', 'Data', 'Cliente', 'Pago', 'Divida anterior', 'Divida restante', 'Cancelar']
     : ['ID', 'Data', 'Cliente', 'Pago', 'Divida anterior', 'Divida restante']);
   tbody.innerHTML = '';
@@ -145,7 +145,7 @@ function renderPayments(pagamentos) {
     row.insertCell().textContent = formatCurrency(pagamento.divida_anterior);
     row.insertCell().textContent = formatCurrency(pagamento.divida_restante);
 
-    if (canUseCriticalActions) {
+    if (canUseOperationalCorrections) {
       const actions = row.insertCell();
       const button = document.createElement('button');
       button.className = 'delete-button';
@@ -225,7 +225,11 @@ document.getElementById('exportarHistorico').addEventListener('click', async () 
 
 async function initialize() {
   const status = await ipcRenderer.invoke('auth:status');
-  canUseCriticalActions = Boolean(status.authenticated && status.user && status.user.permissions.criticalActions);
+  canUseOperationalCorrections = Boolean(
+    status.authenticated
+      && status.user
+      && (status.user.permissions.operationalCorrections || status.user.permissions.criticalActions),
+  );
   setDefaultDates();
   await loadCurrent();
 }

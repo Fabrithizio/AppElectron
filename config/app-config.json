@@ -22,6 +22,7 @@
           "cash": true,
           "finance": true,
           "administration": true,
+          "operationalCorrections": true,
           "criticalActions": true
         },
         "passwordSalt": "owner-default-salt",
@@ -41,6 +42,7 @@
           "cash": true,
           "finance": false,
           "administration": false,
+          "operationalCorrections": true,
           "criticalActions": false
         },
         "passwordSalt": "staff-default-salt",
@@ -62,6 +64,11 @@
     "simpleProducts": true,
     "stockControl": false,
     "barcode": true
+  },
+  "backup": {
+    "automaticEnabled": true,
+    "automaticFolder": "backups/automaticos",
+    "keepLast": 30
   },
   "businessProfile": {
     "level": "catalog",

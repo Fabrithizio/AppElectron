@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Hoje</title>
+  <link rel="stylesheet" href="../../styles/base.css">
+  <link rel="stylesheet" href="hoje.css">
+</head>
+<body>
+  <header>
+    <a href="../../index.html"><img src="../../assets/imgs/voltar.png" alt="voltar"></a>
+    <div>
+      <p>Rotina operacional</p>
+      <h1>Hoje</h1>
+    </div>
+    <button id="refreshButton" type="button">Atualizar</button>
+  </header>
+
+  <main>
+    <section class="summary-grid">
+      <article id="cashCard">
+        <span>Caixa</span>
+        <strong id="cashStatus">-</strong>
+      </article>
+      <article>
+        <span>Vendas hoje</span>
+        <strong id="salesToday">0</strong>
+      </article>
+      <article>
+        <span>Atrasados</span>
+        <strong id="lateCount">0</strong>
+      </article>
+      <article>
+        <span>Atencao</span>
+        <strong id="attentionCount">0</strong>
+      </article>
+    </section>
+
+    <section id="cashPanel" class="cash-panel">
+      <div>
+        <span>Caixa do operador</span>
+        <h2 id="cashPanelTitle">Verificando caixa</h2>
+        <p id="cashPanelText">Use o caixa no inicio e fim do expediente.</p>
+      </div>
+      <form id="openCashInlineForm" class="inline-cash-form">
+        <input id="inlineInitialValue" type="number" min="0" step="0.01" value="0" aria-label="Valor inicial">
+        <button type="submit">Abrir caixa</button>
+      </form>
+      <a id="cashPageLink" href="../caixa/caixa.html">Conferir caixa</a>
+    </section>
+
+    <section class="work-grid">
+      <article class="panel">
+        <div class="panel-heading">
+          <h2>Clientes para acompanhar</h2>
+          <small>Prioriza atrasados, depois quem esta chegando perto.</small>
+        </div>
+        <div id="collectionList" class="list"></div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-heading">
+          <h2>Aniversariantes</h2>
+          <small>Clientes com aniversario hoje.</small>
+        </div>
+        <div id="birthdayList" class="list"></div>
+      </article>
+
+      <article class="panel">
+        <div class="panel-heading">
+          <h2>Estoque baixo</h2>
+          <small>Produtos no minimo ou abaixo dele.</small>
+        </div>
+        <div id="stockList" class="list"></div>
+      </article>
+    </section>
+  </main>
+
+  <script src="hoje.js"></script>
+</body>
+</html>
