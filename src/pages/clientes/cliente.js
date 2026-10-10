@@ -33,6 +33,8 @@ function getFormData() {
     email: document.getElementById('email').value.trim(),
     divida: moneyToNumber(document.getElementById('divida').value),
     dataPagamento: document.getElementById('dataPagamento').value,
+    data_vencimento: document.getElementById('dataVencimento').value,
+    whatsapp_opt_in: document.getElementById('whatsappOptIn').checked,
   };
 }
 
@@ -47,6 +49,8 @@ function fillForm(cliente) {
   document.getElementById('email').value = cliente.email || '';
   document.getElementById('divida').value = Number(cliente.divida || 0).toFixed(2);
   document.getElementById('dataPagamento').value = cliente.dataPagamento || '';
+  document.getElementById('dataVencimento').value = cliente.data_vencimento || '';
+  document.getElementById('whatsappOptIn').checked = Number(cliente.whatsapp_opt_in) === 1;
   updateEditingStatus(cliente);
 }
 

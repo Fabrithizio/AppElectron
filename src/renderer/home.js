@@ -49,7 +49,6 @@ function setAlert(id, text, level) {
 function applySessionPermissions(status) {
   const permissions = status.authenticated && status.user ? status.user.permissions || {} : {};
   document.getElementById('ownerAreaButton').style.display = permissions.administration ? 'inline-flex' : 'none';
-  document.getElementById('whatsappButton').style.display = permissions.whatsapp ? 'inline-flex' : 'none';
 
   const modulePermissionMap = {
     manualSales: 'sales',
@@ -106,7 +105,6 @@ function applyModules(modules) {
   });
 
   document.getElementById('ownerAreaButton').style.display = modules.finance ? 'inline-flex' : 'none';
-  document.getElementById('paymentsButton').style.display = modules.payments ? 'inline-flex' : 'none';
   document.getElementById('backupButton').style.display = modules.backup ? 'inline-flex' : 'none';
 }
 
@@ -141,9 +139,6 @@ async function loadConfig() {
   applyModules(config.modules);
   applyBusinessProfile(config.businessProfile);
 
-  document.getElementById('whatsappButton').addEventListener('click', async () => {
-    await ipcRenderer.invoke('app:open-whatsapp');
-  });
 }
 
 async function loadDashboard() {
@@ -188,11 +183,6 @@ async function loadOperationalAlerts() {
 async function openOwnerArea() {
   window.location.href = 'pages/contabilidade/faturamento.html';
 }
-
-document.getElementById('paymentsButton').addEventListener('click', async () => {
-  await ipcRenderer.invoke('pagamentos:verificar-atrasos');
-  await loadDashboard();
-});
 
 document.getElementById('ownerAreaButton').addEventListener('click', () => {
   openOwnerArea().catch((err) => {

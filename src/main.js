@@ -5,6 +5,7 @@ const { showBirthdayAlerts } = require('./main/notifications');
 const { createMainWindow } = require('./main/window');
 const { automaticBackup } = require('./main/backup');
 const { loadAppConfig } = require('./main/config');
+const { startAutomation } = require('./main/whatsapp-automation');
 
 async function bootstrap() {
   await initializeDatabase();
@@ -22,6 +23,7 @@ async function bootstrap() {
       console.error('Erro ao gerar backup automatico:', err);
     });
   registerIpcHandlers();
+  startAutomation();
 
   const mainWindow = createMainWindow();
   mainWindow.once('ready-to-show', () => {

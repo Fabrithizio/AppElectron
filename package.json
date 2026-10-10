@@ -6,6 +6,7 @@
   "scripts": {
     "start": "electron .",
     "check": "node scripts/check-js.js",
+    "test:whatsapp": "node --test tests/whatsapp-rules.test.js",
     "package:win": "electron-packager . ControleComercial --platform=win32 --arch=x64 --out=dist --overwrite --ignore=dist --ignore=backups",
     "seed:test": "node scripts/seed-test-data.js"
   },

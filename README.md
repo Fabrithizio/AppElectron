@@ -45,6 +45,56 @@ No arquivo `config/app-config.json`, os modulos podem ser ligados ou desligados 
 - `stockControl`: controle de estoque.
 - `barcode`: suporte para codigo de barras via leitor USB/teclado.
 
+## Cobranças WhatsApp
+
+O módulo fica no atalho **Cobranças WhatsApp**. O cadastro do cliente permite guardar um próximo vencimento fixo e registrar se ele autorizou lembretes. Os campos antigos `dataPagamento` e `Pagamentos.data_pagamento` são datas do último pagamento; o módulo não os interpreta como vencimento.
+
+Uma migração aditiva adiciona `Clientes.data_vencimento`, `Clientes.whatsapp_opt_in` e `WhatsAppEnvios`, sem reescrever dívidas ou pagamentos. Antes da migração, o app verifica o banco e cria uma cópia SHA-256 verificada em `backups/schema-migrations/`. A pasta é ignorada pelo Git porque pode conter dados pessoais.
+
+### Modo manual e API
+
+- Por padrão o modo de teste está ligado e a automação fica desligada.
+- A lista usa apenas clientes ativos com saldo positivo; automação exige data de vencimento e consentimento registrado.
+- “Abrir rascunho no WhatsApp” abre `wa.me` com a mensagem para conferência. Isso não envia automaticamente.
+- Mensagens reais usam a WhatsApp Business Platform Cloud API e modelos aprovados. Defina os nomes reais de modelos e idioma aprovados pela Meta; os modelos de cobrança devem conter três parâmetros no corpo, na ordem nome, valor e vencimento. O modelo de teste pode não ter parâmetros.
+- Tokens são criptografados com `safeStorage` do Electron no perfil local do usuário Windows, fora do repositório. A API só pode ser configurada por administrador.
+- Para habilitar envio real, a empresa precisa configurar uma Meta Business Account e WhatsApp Business Account, registrar/verificar um número, obter o Phone Number ID e token com permissões válidas, cadastrar e aprovar modelos, obter consentimento dos clientes e atender às regras de mensagens da Meta. Informe no painel uma versão atual suportada da Graph API; versões não são presumidas pelo aplicativo.
+- Consulte a [visão geral da WhatsApp Cloud API](https://developers.facebook.com/docs/whatsapp/cloud-api/overview) e as [informações oficiais do WhatsApp Business](https://business.whatsapp.com/).
+- “Testar conexão” consulta os dados do número comercial; “Enviar mensagem de teste” envia o modelo aprovado ao número autorizado configurado. Essa ação envia uma mensagem real ao número de teste escolhido; o modo de teste continua bloqueando cobranças automáticas para clientes.
+- “Executar verificação manual” simula a lista elegível enquanto o modo de teste estiver ligado. A simulação não chama a API e não cria eventos de envio.
+
+### Regras e limites
+
+O processo verifica clientes a cada 30 minutos enquanto o app está aberto. Ele respeita a janela horária local configurada, limite diário, saldo, vencimento, consentimento e intervalo de atraso. Pode enviar um lembrete durante os dias de antecedência configurados, um evento no vencimento e cobranças repetidas no intervalo definido depois do vencimento. O identificador único do evento impede duplicatas por cliente, tipo e data; um evento que ficou em estado “enviando” após fechamento inesperado não é repetido automaticamente, para evitar uma possível duplicidade. Falhas tentam novamente até três vezes, separadas por uma hora.
+
+O histórico registra tentativas, falhas e IDs de mensagem. `aceito_api` significa apenas que a API aceitou a solicitação; sem webhooks configurados, o app não confirma entrega. O aplicativo precisa estar aberto e o computador conectado durante a janela para processar cobranças. Não há serviço Windows separado.
+
+O vencimento é um único próximo vencimento por cliente, não uma agenda de parcelas. O app não importa vencimentos anteriores automaticamente. Atualize a data no cadastro depois de combinar o próximo pagamento. Não há recebimento de solicitações de descadastro por webhook; remova o consentimento no cadastro quando o cliente pedir para parar.
+
+### Executar e testar
+
+No diretório do repositório, com Node.js e npm instalados. O script de testes também precisa de Node.js 22.5 ou superior (`node:sqlite`):
+
+```powershell
+npm install
+npm start
+```
+
+Verificações automatizadas:
+
+```powershell
+npm run check
+npm run test:whatsapp
+```
+
+Os testes WhatsApp usam `node:sqlite` em banco em memória e dados fictícios. Não fazem chamadas à API nem enviam mensagens.
+
+### Backup e restauração
+
+Use **Realizar Backup** na tela inicial para escolher uma pasta; o banco é salvo como `Banco_dados.db` dentro de uma pasta datada. Para restaurar, feche o aplicativo, copie o banco atual para uma pasta segura, substitua `Banco_dados.db` na pasta usada pelo app pela cópia de backup e reabra o app. Não restaure o `Banco_dados.db` incluído no repositório sobre um banco de loja.
+
+Neste código, `src/main/database.js` localiza o banco em `Banco_dados.db` na raiz do projeto. A rotina de migração atua no banco localizado pela instalação em que o aplicativo está aberto; ela não acessa cópias em outros diretórios.
+
 ## Administracao
 
 A tela inicial nao mostra valores de dinheiro para proteger informacoes administrativas quando funcionarios usam o app. Os detalhes financeiros ficam na Administracao, protegida por usuario e senha.

@@ -16,7 +16,24 @@
     <button id="refreshButton" type="button">Atualizar</button>
   </header>
 
-  <main>
+  <section id="cashGate" class="cash-gate" hidden>
+    <div class="cash-gate-card">
+      <span class="eyebrow">Início do expediente</span>
+      <h2>Abra o caixa para começar</h2>
+      <p>Informe o valor que já está no caixa. Depois disso, a tela Hoje mostra as pendências e os avisos do dia.</p>
+      <form id="openCashGateForm" class="cash-gate-form">
+        <label for="gateInitialValue">Valor inicial do caixa</label>
+        <div>
+          <span>R$</span>
+          <input id="gateInitialValue" type="number" min="0" step="0.01" value="0" required>
+          <button type="submit">Abrir caixa e continuar</button>
+        </div>
+      </form>
+      <p id="cashGateNotice" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <main id="todayContent" hidden>
     <section class="summary-grid">
       <article id="cashCard">
         <span>Caixa</span>
@@ -42,20 +59,64 @@
         <h2 id="cashPanelTitle">Verificando caixa</h2>
         <p id="cashPanelText">Use o caixa no inicio e fim do expediente.</p>
       </div>
-      <form id="openCashInlineForm" class="inline-cash-form">
-        <input id="inlineInitialValue" type="number" min="0" step="0.01" value="0" aria-label="Valor inicial">
-        <button type="submit">Abrir caixa</button>
-      </form>
       <a id="cashPageLink" href="../caixa/caixa.html">Conferir caixa</a>
+    </section>
+
+    <section class="panel tasks-panel">
+      <div class="panel-heading">
+        <h2>Afazeres de hoje</h2>
+        <small>Tarefas atribuídas aparecem aqui; quem concluir confirma no próprio app.</small>
+      </div>
+      <p id="tasksNotice" class="tasks-notice" role="status" aria-live="polite"></p>
+      <form id="taskForm" class="task-form" hidden>
+        <h3>Adicionar tarefa</h3>
+        <div class="task-form-grid">
+          <label>
+            Tarefa pronta
+            <select id="taskPreset" required>
+              <option value="">Escolha uma tarefa</option>
+              <option value="Etiquetar roupas">Etiquetar roupas</option>
+              <option value="Limpar área de atendimento">Limpar área de atendimento</option>
+              <option value="Organizar araras e prateleiras">Organizar araras e prateleiras</option>
+              <option value="Organizar provadores">Organizar provadores</option>
+              <option value="__custom">Outra tarefa (ex.: limpar a frente da loja)</option>
+            </select>
+          </label>
+          <label id="customTaskTitleWrap" hidden>
+            Nome da tarefa
+            <input id="customTaskTitle" type="text" maxlength="100" placeholder="Descreva a tarefa">
+          </label>
+          <label>
+            Responsável
+            <select id="taskAssignee" required></select>
+          </label>
+          <label>
+            Fazer até
+            <input id="taskDueDate" type="date" required>
+          </label>
+        </div>
+        <label class="task-details-label" for="taskDetails">Orientação (opcional)</label>
+        <textarea id="taskDetails" maxlength="500" rows="2" placeholder="Algum detalhe para o funcionário?"></textarea>
+        <button type="submit">Criar tarefa</button>
+      </form>
+      <div id="taskList" class="task-list"></div>
     </section>
 
     <section class="work-grid">
       <article class="panel">
         <div class="panel-heading">
-          <h2>Clientes para acompanhar</h2>
-          <small>Prioriza atrasados, depois quem esta chegando perto.</small>
+          <h2>Clientes em atraso</h2>
+          <small>Prepare a mensagem no WhatsApp e confirme aqui depois de enviá-la.</small>
         </div>
-        <div id="collectionList" class="list"></div>
+        <p id="collectionNotice" class="collection-notice" role="status" aria-live="polite"></p>
+        <section class="collection-group" aria-labelledby="overdueHeading">
+          <h3 id="overdueHeading">Em atraso <span id="overdueMessageCount">0</span></h3>
+          <div id="overdueList" class="list"></div>
+        </section>
+        <section class="collection-group attention-group" aria-labelledby="attentionHeading">
+          <h3 id="attentionHeading">Precisam de atenção</h3>
+          <div id="attentionList" class="list"></div>
+        </section>
       </article>
 
       <article class="panel">

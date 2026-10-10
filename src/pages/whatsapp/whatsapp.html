@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cobranças WhatsApp</title>
+  <link rel="stylesheet" href="../../styles/base.css">
+  <link rel="stylesheet" href="whatsapp.css">
+</head>
+<body>
+  <header class="page-header">
+    <a href="../../index.html"><img src="../../assets/imgs/voltar.png" alt="Voltar"></a>
+    <div><h1>Cobranças WhatsApp</h1><p>Painel de saldos pendentes e lembretes com conferência manual.</p></div>
+    <button id="refreshButton" type="button">Atualizar lista</button>
+  </header>
+  <main class="workspace wa-workspace">
+    <section class="metrics" aria-label="Resumo">
+      <article><span>Clientes com saldo</span><strong id="clientCount">0</strong></article>
+      <article><span>Valores pendentes</span><strong id="debtTotal">R$ 0,00</strong></article>
+      <article><span>Vencem hoje</span><strong id="dueToday">0</strong></article>
+      <article><span>Em atraso</span><strong id="overdue">0</strong></article>
+    </section>
+    <section class="panel">
+      <div class="toolbar">
+        <input id="search" type="search" placeholder="Pesquisar nome ou telefone">
+        <select id="statusFilter"><option value="todos">Todas as situações</option><option value="vence_hoje">Vencimento hoje</option><option value="atrasado">Em atraso</option><option value="futuro">Vencimento futuro</option><option value="sem_vencimento">Sem vencimento</option></select>
+        <select id="delayFilter"><option value="todos">Qualquer atraso</option><option value="1-7">1 a 7 dias</option><option value="8-30">8 a 30 dias</option><option value="31+">Mais de 30 dias</option></select>
+        <label>Vencimento de <input id="dateFrom" type="date"></label>
+        <label>até <input id="dateTo" type="date"></label>
+      </div>
+      <div class="actions"><button id="previewButton" type="button" class="secondary">Visualizar mensagem</button><button id="draftButton" type="button">Abrir rascunho no WhatsApp</button><button id="integrationButton" type="button" class="secondary">Testar integração</button></div>
+      <p id="notice" role="status" class="notice"></p>
+      <div class="table-wrap"><table><thead><tr><th></th><th>Cliente</th><th>Saldo</th><th>Vencimento</th><th>Situação</th><th>Telefone / consentimento</th></tr></thead><tbody id="clientRows"></tbody></table></div>
+    </section>
+    <section class="panel history-panel"><h2>Histórico de envios e falhas</h2><div id="historyRows" class="history-list"></div></section>
+    <details id="adminSettings" class="panel admin-panel" hidden>
+      <summary>Configuração administrativa da API e automação</summary>
+      <p>O token fica criptografado no perfil Windows do usuário do aplicativo. Token em branco mantém o token salvo.</p>
+      <form id="settingsForm">
+        <div class="settings-grid">
+          <label>Versão da Graph API<input id="apiVersion" placeholder="Informe a versão aprovada pela Meta"></label>
+          <label>ID do número comercial<input id="phoneNumberId"></label>
+          <label>ID da conta empresarial (opcional)<input id="businessAccountId"></label>
+          <label>Token de acesso<input id="apiToken" type="password" autocomplete="new-password" placeholder="Deixe vazio para manter o token armazenado"></label>
+          <label><input id="clearToken" type="checkbox"> Remover token armazenado</label>
+          <label>Idioma dos modelos<input id="templateLanguage" value="pt_BR"></label>
+          <label>Número de teste autorizado<input id="testNumber" placeholder="DDI + DDD + número"></label>
+          <label>Modelo aprovado: lembrete<input id="templateReminder"></label>
+          <label>Modelo aprovado: vencimento<input id="templateDue"></label>
+          <label>Modelo aprovado: atraso<input id="templateOverdue"></label>
+          <label>Modelo aprovado: teste<input id="templateTest"></label>
+          <label>Dias antes do vencimento<input id="beforeDays" type="number" min="0" max="30" value="3"></label>
+          <label>Intervalo em atraso (dias)<input id="intervalDays" type="number" min="1" max="90" value="7"></label>
+          <label>Horário inicial permitido<input id="sendStart" type="time" value="09:00"></label>
+          <label>Horário final permitido<input id="sendEnd" type="time" value="18:00"></label>
+          <label>Máximo de lembretes por dia<input id="dailyLimit" type="number" min="1" max="100" value="20"></label>
+        </div>
+        <h3>Mensagens de rascunho WhatsApp</h3>
+        <p>As mensagens abrem em uma conversa para revisão manual; variáveis disponíveis: {nome}, {loja}, {valor}, {vencimento} e {dias_atraso}.</p>
+        <div class="settings-grid draft-grid">
+          <label>Lembrete<textarea id="draftReminder" rows="4"></textarea></label>
+          <label>Vencimento<textarea id="draftDue" rows="4"></textarea></label>
+          <label>Atraso<textarea id="draftOverdue" rows="4"></textarea></label>
+          <label>Sem vencimento<textarea id="draftNoDue" rows="4"></textarea></label>
+        </div>
+        <div class="check-row"><label><input id="apiEnabled" type="checkbox"> Ativar API oficial</label><label><input id="testMode" type="checkbox" checked> Modo de teste (bloqueia envios reais)</label><label><input id="automationEnabled" type="checkbox"> Ativar automação ao abrir o aplicativo</label></div>
+        <div class="actions"><button type="submit">Salvar configurações</button><button id="authorizedTestButton" type="button" class="secondary">Enviar mensagem de teste</button><button id="connectionButton" type="button" class="secondary">Testar conexão</button><button id="manualRunButton" type="button" class="secondary">Executar verificação manual</button></div>
+      </form>
+    </details>
+    <dialog id="previewDialog"><h2>Prévia da mensagem</h2><pre id="previewText"></pre><button id="closePreview" type="button">Fechar</button></dialog>
+  </main>
+  <script src="whatsapp.js"></script>
+</body>
+</html>

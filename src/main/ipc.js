@@ -1,4 +1,4 @@
-const { BrowserWindow, dialog, ipcMain } = require('electron');
+const { BrowserWindow, clipboard, dialog, ipcMain, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const auth = require('./auth');
@@ -29,6 +29,16 @@ const {
   listFinancialAccounts,
   listClientes,
   listClientesWithPaymentStatus,
+  listBirthdayClientes,
+  listManualCollectionSent,
+  getManualCollectionSent,
+  markManualCollectionSent,
+  unmarkManualCollectionSent,
+  listOperationalTasks,
+  getOperationalTask,
+  createOperationalTask,
+  completeOperationalTask,
+  reopenOperationalTask,
   listDespesasByInterval,
   listLowStockProdutos,
   listProdutoStockMovements,
@@ -56,7 +66,15 @@ const {
   updateCliente,
   upsertProduto,
   writeAuditLog,
+  listWhatsAppDashboard,
+  createWhatsAppEvent,
+  beginWhatsAppAttempt,
+  finishWhatsAppAttempt,
+  listWhatsAppHistory,
 } = require('./database');
+const whatsapp = require('./whatsapp');
+const { runVerification } = require('./whatsapp-automation');
+const { statusForDueDate, isValidPhone, normalizePhone } = require('./whatsapp-rules');
 
 const paymentMethods = ['Pix', 'Especie', 'Fiado', 'Debito', 'Credito'];
 const overdueThresholdDays = 90;
@@ -258,7 +276,189 @@ async function handleVerifyPayments(event) {
   });
 }
 
+async function openWhatsAppDraft(payload) {
+  const phone = normalizePhone(payload && payload.phone);
+  if (phone.length < 10 || phone.length > 15) throw new Error('Telefone ausente ou invalido.');
+  const message = String(payload && payload.message || '').slice(0, 1500);
+  const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  await shell.openExternal(url);
+  return { opened: true, sent: false };
+}
+
 function registerIpcHandlers() {
+  ipcMain.handle('whatsapp:dashboard', async () => {
+    requirePermission('whatsapp');
+    const rows = await listWhatsAppDashboard();
+    const clients = new Map();
+    const history = (await listWhatsAppHistory(200)).map((row) => ({ id: row.id, cliente: row.nome, tipo: row.tipo,
+      data_prevista: row.data_prevista, data_vencimento: row.data_vencimento, tentativa_em: row.tentativa_em, status: row.status,
+      tentativas: row.tentativas, erro: row.erro, entregue_em: row.entregue_em,
+      cancelado_em: row.cancelado_em, api_message_id: row.api_message_id }));
+    for (const row of rows) {
+      if (!clients.has(row.id)) clients.set(row.id, { id: row.id, nome: row.nome, telefone: row.telefone,
+        divida: row.divida, data_vencimento: row.data_vencimento, consent: Number(row.whatsapp_opt_in) === 1 });
+    }
+    const today = localDateString();
+    const list = [...clients.values()].map((client) => {
+      const status = statusForDueDate(client.data_vencimento, today);
+      return { ...client, status, telefoneValido: isValidPhone(client.telefone) };
+    });
+    return { clients: list, history, settings: { ...whatsapp.publicSettings(), companyName: loadAppConfig().company.name },
+      totals: { clients: list.length, debt: list.reduce((sum, item) => sum + Number(item.divida || 0), 0),
+        today: list.filter((item) => item.status === 'vence_hoje').length,
+        overdue: list.filter((item) => item.status === 'atrasado').length } };
+  });
+  ipcMain.handle('whatsapp:settings', async () => { requirePermission('whatsapp'); return whatsapp.publicSettings(); });
+  ipcMain.handle('whatsapp:settings-save', async (_event, settings) => {
+    requireOwnerAccess();
+    if (settings && settings.apiVersion && !/^v\d+\.\d+$/.test(String(settings.apiVersion))) throw new Error('Informe a versão da Graph API no formato vNN.N.');
+    if (settings && settings.phoneNumberId && !/^\d{5,40}$/.test(String(settings.phoneNumberId))) throw new Error('ID do número comercial inválido.');
+    if (settings && settings.businessAccountId && !/^\d{5,40}$/.test(String(settings.businessAccountId))) throw new Error('ID da conta empresarial inválido.');
+    const saved = whatsapp.saveSettings(settings || {});
+    await writeAuditLog({ entidade: 'WhatsApp', acao: 'ALTERAR_CONFIGURACAO', usuario: currentUsername(),
+      dadosDepois: { ...saved, tokenConfigured: saved.tokenConfigured, token: undefined } });
+    return saved;
+  });
+  ipcMain.handle('whatsapp:test-connection', async () => {
+    requireOwnerAccess();
+    try { const result = await whatsapp.testConnection(); return result; }
+    catch (error) { throw new Error(String(error.message || 'Falha na conexao.').slice(0, 500)); }
+  });
+  ipcMain.handle('whatsapp:open-draft', async (_event, payload) => {
+    requirePermission('whatsapp');
+    return openWhatsAppDraft(payload);
+  });
+  ipcMain.handle('hoje:copy-collection-message', async (_event, message) => {
+    requirePermission('clients');
+    const text = String(message || '').trim();
+    if (!text || text.length > 1500) throw new Error('Mensagem invalida.');
+    clipboard.writeText(text);
+    return { copied: true };
+  });
+  ipcMain.handle('hoje:open-collection-draft', async (_event, payload) => {
+    requirePermission('clients');
+    return openWhatsAppDraft(payload);
+  });
+  ipcMain.handle('hoje:mark-collection-sent', async (_event, clienteId) => {
+    requirePermission('clients');
+    const id = Number(clienteId);
+    if (!Number.isInteger(id) || id < 1) throw new Error('Cliente inválido.');
+    const month = localDateString().slice(0, 7);
+    const before = await getManualCollectionSent(id, month);
+    const sentDate = localDateString();
+    const record = await markManualCollectionSent(id, month, currentUsername(), sentDate);
+    await writeAuditLog({
+      entidade: 'CobrancasEnviadasManualmente',
+      entidadeId: id,
+      acao: 'CONFIRMAR_ENVIO_COBRANCA',
+      usuario: currentUsername(),
+      dadosAntes: before,
+      dadosDepois: record,
+    });
+    return record;
+  });
+  ipcMain.handle('hoje:unmark-collection-sent', async (_event, clienteId) => {
+    requirePermission('clients');
+    const id = Number(clienteId);
+    if (!Number.isInteger(id) || id < 1) throw new Error('Cliente inválido.');
+    const month = localDateString().slice(0, 7);
+    const before = await getManualCollectionSent(id, month);
+    if (!before) return { removed: false };
+    await unmarkManualCollectionSent(id, month);
+    await writeAuditLog({
+      entidade: 'CobrancasEnviadasManualmente',
+      entidadeId: id,
+      acao: 'CORRIGIR_CONFIRMACAO_ENVIO_COBRANCA',
+      usuario: currentUsername(),
+      dadosAntes: before,
+    });
+    return { removed: true };
+  });
+  ipcMain.handle('hoje:tasks-context', async () => {
+    const user = requireLogin();
+    return {
+      user: { username: user.username, name: user.name, role: user.role },
+      isOwner: user.role === 'owner',
+      users: user.role === 'owner'
+        ? auth.listUsers().filter((item) => item.active !== false)
+        : [],
+    };
+  });
+  ipcMain.handle('hoje:tasks-list', async () => {
+    const user = requireLogin();
+    return listOperationalTasks({
+      responsavelUsername: user.username,
+      includeAll: user.role === 'owner',
+      today: localDateString(),
+    });
+  });
+  ipcMain.handle('hoje:tasks-create', async (_event, payload = {}) => {
+    requireOwnerAccess();
+    const user = auth.requireAuthenticated();
+    const title = String(payload.titulo || '').trim().slice(0, 100);
+    const details = String(payload.detalhes || '').trim().slice(0, 500);
+    const dueDate = String(payload.dataPrevista || '');
+    if (!title) throw new Error('Escolha ou informe o nome da tarefa.');
+    if (!isValidDate(dueDate)) throw new Error('Informe uma data válida para a tarefa.');
+    const parsedDate = new Date(`${dueDate}T00:00:00`);
+    if (Number.isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== dueDate) {
+      throw new Error('Informe uma data válida para a tarefa.');
+    }
+    const assigneeUsername = payload.responsavelUsername === '__self'
+      ? user.username
+      : String(payload.responsavelUsername || '');
+    const assignee = auth.listUsers().find((item) => item.username === assigneeUsername && item.active !== false);
+    if (!assignee) throw new Error('Escolha um funcionário ativo para receber a tarefa.');
+    return createOperationalTask({
+      titulo: title,
+      detalhes: details,
+      responsavelUsername: assignee.username,
+      dataPrevista: dueDate,
+      criadoPor: user.username,
+    });
+  });
+  ipcMain.handle('hoje:tasks-complete', async (_event, taskId) => {
+    const user = requireLogin();
+    const id = Number(taskId);
+    if (!Number.isInteger(id) || id < 1) throw new Error('Tarefa inválida.');
+    const task = await getOperationalTask(id);
+    if (!task) throw new Error('Tarefa não encontrada.');
+    if (user.role !== 'owner' && task.responsavel_username !== user.username) {
+      throw new Error('Você só pode concluir tarefas atribuídas a você.');
+    }
+    return completeOperationalTask(id, user.username, localDateString());
+  });
+  ipcMain.handle('hoje:tasks-reopen', async (_event, taskId) => {
+    requireOwnerAccess();
+    const id = Number(taskId);
+    if (!Number.isInteger(id) || id < 1) throw new Error('Tarefa inválida.');
+    return reopenOperationalTask(id, currentUsername());
+  });
+  ipcMain.handle('whatsapp:send-test', async () => {
+    requireOwnerAccess();
+    const settings = whatsapp.getSettings();
+    if (!settings.authorizedTestNumber || !settings.templates.teste) throw new Error('Informe o numero de teste autorizado e o modelo aprovado de teste.');
+    const eventDate = localDateString();
+    try {
+      await createWhatsAppEvent(0, 'teste', eventDate, eventDate);
+      await beginWhatsAppAttempt({ clienteId: 0, tipo: 'teste', dataPrevista: eventDate, dataVencimento: eventDate });
+      const result = await whatsapp.sendCloudTemplate({ telefone: settings.authorizedTestNumber, nome: 'Teste',
+        divida: 0, data_vencimento: '', whatsapp_opt_in: true }, 'teste', settings.templates.teste, settings.templateLanguage,
+      { allowAuthorizedTest: true });
+      await finishWhatsAppAttempt({ clienteId: 0, tipo: 'teste', dataPrevista: eventDate, status: 'aceito_api', messageId: result.messageId || null });
+      await writeAuditLog({ entidade: 'WhatsApp', acao: 'ENVIAR_TESTE', usuario: currentUsername(),
+        dadosDepois: { status: 'aceito_pela_api', messageId: result.messageId || null } });
+      return { sent: true, messageId: result.messageId || null };
+    } catch (error) {
+      await finishWhatsAppAttempt({ clienteId: 0, tipo: 'teste', dataPrevista: eventDate,
+        status: 'falha', error: String(error.message || 'Falha').slice(0, 500) });
+      await writeAuditLog({ entidade: 'WhatsApp', acao: 'FALHA_TESTE', usuario: currentUsername(),
+        dadosDepois: { status: 'falha', erro: String(error.message || 'Falha').slice(0, 500) } });
+      throw new Error(String(error.message || 'Falha no envio.').slice(0, 500));
+    }
+  });
+  ipcMain.handle('whatsapp:history', async () => { requirePermission('whatsapp'); return listWhatsAppHistory(); });
+  ipcMain.handle('whatsapp:run-manual', async () => { requireOwnerAccess(); return runVerification({ manual: true }); });
   ipcMain.handle('app:config', async () => loadAppConfig());
   ipcMain.handle('app:open-whatsapp', async (_event, targetUrl) => {
     requirePermission('whatsapp');
@@ -748,13 +948,15 @@ function registerIpcHandlers() {
     const monthDay = today.slice(5);
     const paymentRows = await listClientesWithPaymentStatus();
     const cobrancas = getCollectionRows(paymentRows);
-    const clientesParaCobrar = cobrancas
-      .filter((row) => ['atrasado', 'atencao', 'sem_data'].includes(row.statusCobranca))
+    const clientesEmAtraso = cobrancas.filter((row) => row.statusCobranca === 'atrasado');
+    const clientesParaAcompanhar = cobrancas
+      .filter((row) => ['atencao', 'sem_data'].includes(row.statusCobranca))
       .slice(0, 12);
 
-    const [quantidadeVendasHoje, aniversariantes] = await Promise.all([
+    const [quantidadeVendasHoje, aniversariantes, cobrancasEnviadasEsteMes] = await Promise.all([
       countVendasByDate(today),
       listBirthdayClientes(monthDay),
+      listManualCollectionSent(today.slice(0, 7)),
     ]);
 
     const estoqueBaixo = user.permissions && user.permissions.products
@@ -768,7 +970,11 @@ function registerIpcHandlers() {
       data: today,
       quantidadeVendasHoje,
       caixaAberto: Boolean(caixaAberto),
-      clientesParaCobrar,
+      clientesEmAtraso,
+      cobrancasEnviadasEsteMes: Object.fromEntries(
+        cobrancasEnviadasEsteMes.map((row) => [row.cliente_id, row]),
+      ),
+      clientesParaAcompanhar,
       totalAtrasados: cobrancas.filter((row) => row.statusCobranca === 'atrasado').length,
       totalAtencao: cobrancas.filter((row) => row.statusCobranca === 'atencao').length,
       aniversariantes,

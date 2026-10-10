@@ -1,5 +1,8 @@
 const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 const sqlite3 = require('sqlite3').verbose();
+const { whatsappEventsSchemaSql } = require('./whatsapp-schema');
 
 const projectRoot = path.resolve(__dirname, '..', '..');
 const databasePath = path.join(projectRoot, 'Banco_dados.db');
@@ -55,6 +58,35 @@ async function ensureColumn(table, column, definition) {
   }
 }
 
+async function backupBeforeWhatsAppMigration() {
+  if (!fs.existsSync(databasePath) || fs.statSync(databasePath).size === 0) return;
+  const health = await get('PRAGMA integrity_check');
+  if (!health || health.integrity_check !== 'ok') throw new Error('Banco de dados nao passou na verificacao de integridade; migracao interrompida.');
+  const columns = await all('PRAGMA table_info(Clientes)');
+  const migration = await get("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'WhatsAppEnvios'");
+  const eventColumns = migration ? await all('PRAGMA table_info(WhatsAppEnvios)') : [];
+  if (columns.some((column) => column.name === 'data_vencimento')
+    && columns.some((column) => column.name === 'whatsapp_opt_in')
+    && migration && eventColumns.some((column) => column.name === 'data_vencimento')) return;
+  const backupDir = path.join(projectRoot, 'backups', 'schema-migrations');
+  await fs.promises.mkdir(backupDir, { recursive: true });
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const backupPath = path.join(backupDir, `before-whatsapp-${stamp}.db`);
+  await fs.promises.copyFile(databasePath, backupPath, fs.constants.COPYFILE_EXCL);
+  const digest = (file) => new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256');
+    const stream = fs.createReadStream(file);
+    stream.on('data', (chunk) => hash.update(chunk));
+    stream.on('error', reject);
+    stream.on('end', () => resolve(hash.digest('hex')));
+  });
+  const [sourceHash, backupHash] = await Promise.all([digest(databasePath), digest(backupPath)]);
+  if (sourceHash !== backupHash) {
+    await fs.promises.rm(backupPath, { force: true });
+    throw new Error('Backup da migracao do WhatsApp nao passou na verificacao de integridade.');
+  }
+}
+
 async function writeAuditLog({
   entidade,
   entidadeId,
@@ -82,6 +114,7 @@ async function writeAuditLog({
 }
 
 async function initializeDatabase() {
+  await backupBeforeWhatsAppMigration();
   await run(`
     CREATE TABLE IF NOT EXISTS Clientes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -170,6 +203,31 @@ async function initializeDatabase() {
   `);
 
   await run(`
+    CREATE TABLE IF NOT EXISTS CobrancasEnviadasManualmente (
+      cliente_id INTEGER NOT NULL,
+      mes TEXT NOT NULL,
+      enviado_em TEXT NOT NULL,
+      usuario TEXT,
+      PRIMARY KEY (cliente_id, mes)
+    )
+  `);
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS TarefasOperacionais (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      titulo TEXT NOT NULL,
+      detalhes TEXT,
+      responsavel_username TEXT NOT NULL,
+      data_prevista TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pendente',
+      criado_por TEXT,
+      criado_em TEXT NOT NULL,
+      concluido_por TEXT,
+      concluido_em TEXT
+    )
+  `);
+
+  await run(`
     CREATE TABLE IF NOT EXISTS CaixaFechamentos (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       usuario TEXT NOT NULL,
@@ -244,6 +302,10 @@ async function initializeDatabase() {
   await ensureColumn('Produtos', 'estoque_minimo', 'REAL DEFAULT 0');
   await ensureColumn('Produtos', 'localizacao', 'TEXT');
   await ensureColumn('Produtos', 'observacao', 'TEXT');
+  await ensureColumn('Clientes', 'data_vencimento', 'TEXT');
+  await ensureColumn('Clientes', 'whatsapp_opt_in', 'INTEGER DEFAULT 0');
+  await run(whatsappEventsSchemaSql);
+  await ensureColumn('WhatsAppEnvios', 'data_vencimento', 'TEXT');
 }
 
 function normalizeMoney(value) {
@@ -255,11 +317,22 @@ function subtractMoney(value, subtractValue) {
   return normalizeMoney(normalizeMoney(value) - normalizeMoney(subtractValue));
 }
 
+function validateClientDates(cliente) {
+  for (const value of [cliente.data_vencimento, cliente.dataPagamento]) {
+    if (!value) continue;
+    const parsed = new Date(`${value}T00:00:00`);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) {
+      throw new Error('Informe uma data válida para o vencimento e o pagamento.');
+    }
+  }
+}
+
 async function insertCliente(cliente, meta = {}) {
+  validateClientDates(cliente);
   const result = await run(
     `INSERT INTO Clientes
-      (nome, DataNascimento, cpf, rg, endereco, telefone, email, divida, dataPagamento)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (nome, DataNascimento, cpf, rg, endereco, telefone, email, divida, dataPagamento, data_vencimento, whatsapp_opt_in)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       cliente.nome,
       cliente.DataNascimento || null,
@@ -270,6 +343,8 @@ async function insertCliente(cliente, meta = {}) {
       cliente.email || null,
       normalizeMoney(cliente.divida),
       cliente.dataPagamento || null,
+      cliente.data_vencimento || null,
+      cliente.whatsapp_opt_in ? 1 : 0,
     ],
   );
   await writeAuditLog({
@@ -283,11 +358,12 @@ async function insertCliente(cliente, meta = {}) {
 }
 
 async function updateCliente(cliente, meta = {}) {
+  validateClientDates(cliente);
   const before = await get('SELECT * FROM Clientes WHERE id = ?', [cliente.id]);
   const result = await run(
     `UPDATE Clientes
       SET nome = ?, DataNascimento = ?, cpf = ?, rg = ?, endereco = ?, telefone = ?,
-          email = ?, divida = ?, dataPagamento = ?
+          email = ?, divida = ?, dataPagamento = ?, data_vencimento = ?, whatsapp_opt_in = ?
       WHERE id = ?`,
     [
       cliente.nome,
@@ -299,9 +375,19 @@ async function updateCliente(cliente, meta = {}) {
       cliente.email || null,
       normalizeMoney(cliente.divida),
       cliente.dataPagamento || null,
+      cliente.data_vencimento || null,
+      cliente.whatsapp_opt_in ? 1 : 0,
       cliente.id,
     ],
   );
+  if (normalizeMoney(cliente.divida) <= 0) {
+    await run(`UPDATE WhatsAppEnvios SET status = 'cancelado', cancelado_em = ?, atualizado_em = ?
+      WHERE cliente_id = ? AND status IN ('pendente', 'agendado')`, [nowIsoDateTime(), nowIsoDateTime(), cliente.id]);
+  }
+  if (!cliente.whatsapp_opt_in) {
+    await run(`UPDATE WhatsAppEnvios SET status = 'cancelado', cancelado_em = ?, atualizado_em = ?
+      WHERE cliente_id = ? AND status IN ('pendente', 'agendado')`, [nowIsoDateTime(), nowIsoDateTime(), cliente.id]);
+  }
   await writeAuditLog({
     entidade: 'Clientes',
     entidadeId: cliente.id,
@@ -338,6 +424,8 @@ async function deleteCliente(id, meta = {}) {
     'UPDATE Clientes SET ativo = 0, inativado_em = ?, inativado_motivo = ? WHERE id = ?',
     [nowIsoDateTime(), meta.motivo || 'Inativado pelo usuario', id],
   );
+  await run(`UPDATE WhatsAppEnvios SET status = 'cancelado', cancelado_em = ?, atualizado_em = ?
+    WHERE cliente_id = ? AND status IN ('pendente', 'agendado')`, [nowIsoDateTime(), nowIsoDateTime(), id]);
   await writeAuditLog({
     entidade: 'Clientes',
     entidadeId: id,
@@ -488,6 +576,10 @@ async function deleteVendaAndAdjustDebt(id, meta = {}) {
         normalizeMoney(venda.preco),
         venda.cliente,
       ]);
+      await run(`UPDATE WhatsAppEnvios SET status = 'cancelado', cancelado_em = ?, atualizado_em = ?
+        WHERE status IN ('pendente', 'agendado') AND cliente_id = (
+          SELECT id FROM Clientes WHERE nome = ? AND COALESCE(divida, 0) <= 0 LIMIT 1
+        )`, [nowIsoDateTime(), nowIsoDateTime(), venda.cliente]);
     }
 
     await run(
@@ -533,6 +625,11 @@ async function registerPayment({ nomePagador, dividaAnterior, valorPagamento }, 
         VALUES (?, ?, ?, ?, ?, ?)`,
       [nomePagador, dividaAtual, valorPago, dividaRestante, dataPagamento, meta.usuario || null],
     );
+    if (dividaRestante <= 0) {
+      await run(`UPDATE WhatsAppEnvios SET status = 'cancelado', cancelado_em = ?, atualizado_em = ?
+        WHERE cliente_id = (SELECT id FROM Clientes WHERE nome = ?) AND status IN ('pendente', 'agendado')`,
+      [nowIsoDateTime(), nowIsoDateTime(), nomePagador]);
+    }
     await writeAuditLog({
       entidade: 'Pagamentos',
       entidadeId: result.id,
@@ -997,18 +1094,176 @@ async function listBirthdayClientes(monthDay) {
   );
 }
 
+async function listManualCollectionSent(month) {
+  return all(
+    'SELECT cliente_id, enviado_em, usuario FROM CobrancasEnviadasManualmente WHERE mes = ?',
+    [month],
+  );
+}
+
+async function getManualCollectionSent(clienteId, month) {
+  return get(
+    'SELECT cliente_id, enviado_em, usuario FROM CobrancasEnviadasManualmente WHERE cliente_id = ? AND mes = ?',
+    [clienteId, month],
+  );
+}
+
+async function markManualCollectionSent(clienteId, month, usuario, enviadoEm) {
+  const client = await get('SELECT id FROM Clientes WHERE id = ?', [clienteId]);
+  if (!client) throw new Error('Cliente não encontrado.');
+  await run(
+    `INSERT OR REPLACE INTO CobrancasEnviadasManualmente (cliente_id, mes, enviado_em, usuario)
+      VALUES (?, ?, ?, ?)`,
+    [clienteId, month, enviadoEm, usuario || null],
+  );
+  return getManualCollectionSent(clienteId, month);
+}
+
+async function unmarkManualCollectionSent(clienteId, month) {
+  return run(
+    'DELETE FROM CobrancasEnviadasManualmente WHERE cliente_id = ? AND mes = ?',
+    [clienteId, month],
+  );
+}
+
+async function listOperationalTasks({ responsavelUsername, includeAll = false, today }) {
+  const scope = includeAll ? '' : ' AND responsavel_username = ?';
+  const params = includeAll
+    ? [today, today]
+    : [today, today, responsavelUsername];
+  return all(
+    `SELECT * FROM TarefasOperacionais
+      WHERE data_prevista <= ?
+        AND (status = 'pendente' OR DATE(concluido_em) = ?)
+        ${scope}
+      ORDER BY CASE status WHEN 'pendente' THEN 0 ELSE 1 END, data_prevista, id`,
+    params,
+  );
+}
+
+async function getOperationalTask(id) {
+  return get('SELECT * FROM TarefasOperacionais WHERE id = ?', [id]);
+}
+
+async function createOperationalTask({ titulo, detalhes, responsavelUsername, dataPrevista, criadoPor }) {
+  const result = await run(
+    `INSERT INTO TarefasOperacionais
+      (titulo, detalhes, responsavel_username, data_prevista, status, criado_por, criado_em)
+      VALUES (?, ?, ?, ?, 'pendente', ?, ?)`,
+    [titulo, detalhes || null, responsavelUsername, dataPrevista, criadoPor || null, nowIsoDateTime()],
+  );
+  const task = await getOperationalTask(result.id);
+  await writeAuditLog({
+    entidade: 'TarefasOperacionais',
+    entidadeId: task.id,
+    acao: 'CRIAR_TAREFA',
+    usuario: criadoPor,
+    dadosDepois: task,
+  });
+  return task;
+}
+
+async function completeOperationalTask(id, usuario, completedDate) {
+  const task = await getOperationalTask(id);
+  if (!task || task.status !== 'pendente') return { completed: false };
+  await run(
+    "UPDATE TarefasOperacionais SET status = 'concluida', concluido_por = ?, concluido_em = ? WHERE id = ? AND status = 'pendente'",
+    [usuario, completedDate, id],
+  );
+  const updated = await getOperationalTask(id);
+  await writeAuditLog({
+    entidade: 'TarefasOperacionais',
+    entidadeId: id,
+    acao: 'CONCLUIR_TAREFA',
+    usuario,
+    dadosAntes: task,
+    dadosDepois: updated,
+  });
+  return { completed: true, task: updated };
+}
+
+async function reopenOperationalTask(id, usuario) {
+  const task = await getOperationalTask(id);
+  if (!task || task.status !== 'concluida') return { reopened: false };
+  await run(
+    "UPDATE TarefasOperacionais SET status = 'pendente', concluido_por = NULL, concluido_em = NULL WHERE id = ? AND status = 'concluida'",
+    [id],
+  );
+  const updated = await getOperationalTask(id);
+  await writeAuditLog({
+    entidade: 'TarefasOperacionais',
+    entidadeId: id,
+    acao: 'REABRIR_TAREFA',
+    usuario,
+    dadosAntes: task,
+    dadosDepois: updated,
+  });
+  return { reopened: true, task: updated };
+}
+
 async function listClientesWithPaymentStatus() {
   return all(`
-    SELECT c.nome, c.telefone, c.divida, c.dataPagamento,
+    SELECT c.id, c.nome, c.telefone, c.divida, c.dataPagamento, c.data_vencimento, c.whatsapp_opt_in,
       COALESCE(MAX(p.data_pagamento), NULL) AS ultima_data_pagamento,
       COALESCE(MAX(CASE WHEN v.metodoPagamento = 'Fiado' THEN v.dataVenda END), NULL) AS ultima_compra_fiado
     FROM Clientes c
     LEFT JOIN Pagamentos p ON c.nome = p.nome_pagador AND COALESCE(p.cancelado, 0) = 0
     LEFT JOIN vendas v ON c.nome = v.cliente AND COALESCE(v.cancelado, 0) = 0
     WHERE COALESCE(c.ativo, 1) = 1
-    GROUP BY c.nome
+    GROUP BY c.id
     ORDER BY c.nome
   `);
+}
+
+async function listWhatsAppDashboard() {
+  return all(`SELECT c.id, c.nome, c.telefone, c.divida, c.data_vencimento, c.whatsapp_opt_in, c.ativo,
+      e.tipo, e.data_prevista, e.tentativa_em, e.status AS envio_status,
+      e.api_message_id, e.tentativas, e.erro, e.entregue_em, e.cancelado_em
+    FROM Clientes c LEFT JOIN WhatsAppEnvios e ON e.cliente_id = c.id
+    WHERE COALESCE(c.ativo, 1) = 1 AND COALESCE(c.divida, 0) > 0
+    ORDER BY c.nome, e.criado_em DESC`);
+}
+
+async function createWhatsAppEvent(clienteId, tipo, dataPrevista, dataVencimento) {
+  const now = nowIsoDateTime();
+  return run(`INSERT OR IGNORE INTO WhatsAppEnvios
+    (cliente_id, tipo, data_prevista, data_vencimento, status, criado_em, atualizado_em)
+    VALUES (?, ?, ?, ?, 'pendente', ?, ?)`, [clienteId, tipo, dataPrevista, dataVencimento || null, now, now]);
+}
+
+async function getWhatsAppEvent(clienteId, tipo, dataPrevista) {
+  return get('SELECT * FROM WhatsAppEnvios WHERE cliente_id = ? AND tipo = ? AND data_prevista = ?',
+    [clienteId, tipo, dataPrevista]);
+}
+
+async function countWhatsAppAttemptsToday(today) {
+  const row = await get("SELECT COUNT(*) AS total FROM WhatsAppEnvios WHERE DATE(tentativa_em, 'localtime') = ?", [today]);
+  return Number(row.total || 0);
+}
+
+async function beginWhatsAppAttempt({ clienteId, tipo, dataPrevista, dataVencimento }) {
+  const now = nowIsoDateTime();
+  await run(`INSERT OR IGNORE INTO WhatsAppEnvios
+    (cliente_id, tipo, data_prevista, data_vencimento, criado_em, atualizado_em) VALUES (?, ?, ?, ?, ?, ?)`,
+  [clienteId, tipo, dataPrevista, dataVencimento || null, now, now]);
+  const event = await get('SELECT id, tentativas FROM WhatsAppEnvios WHERE cliente_id = ? AND tipo = ? AND data_prevista = ?',
+    [clienteId, tipo, dataPrevista]);
+  await run(`UPDATE WhatsAppEnvios SET tentativa_em = ?, status = ?, api_message_id = ?,
+    tentativas = tentativas + 1, erro = NULL, atualizado_em = ? WHERE id = ?`,
+  [now, 'enviando', null, now, event.id]);
+  return event.id;
+}
+
+async function finishWhatsAppAttempt({ clienteId, tipo, dataPrevista, status, messageId, error }) {
+  const now = nowIsoDateTime();
+  return run(`UPDATE WhatsAppEnvios SET status = ?, api_message_id = ?, erro = ?, atualizado_em = ?
+    WHERE cliente_id = ? AND tipo = ? AND data_prevista = ?`,
+  [status, messageId || null, error || null, now, clienteId, tipo, dataPrevista]);
+}
+
+async function listWhatsAppHistory(limit = 200) {
+  return all(`SELECT e.*, COALESCE(c.nome, CASE WHEN e.cliente_id = 0 THEN 'Teste autorizado' END) AS nome FROM WhatsAppEnvios e
+    LEFT JOIN Clientes c ON c.id = e.cliente_id ORDER BY e.criado_em DESC LIMIT ?`, [limit]);
 }
 
 async function listAuditLog({ dataInicio, dataFim, usuario, acao, entidade, limit = 200 }) {
@@ -1389,7 +1644,23 @@ module.exports = {
   deleteDespesa,
   sumDespesas,
   listBirthdayClientes,
+  listManualCollectionSent,
+  getManualCollectionSent,
+  markManualCollectionSent,
+  unmarkManualCollectionSent,
+  listOperationalTasks,
+  getOperationalTask,
+  createOperationalTask,
+  completeOperationalTask,
+  reopenOperationalTask,
   listClientesWithPaymentStatus,
+  listWhatsAppDashboard,
+  createWhatsAppEvent,
+  getWhatsAppEvent,
+  countWhatsAppAttemptsToday,
+  beginWhatsAppAttempt,
+  finishWhatsAppAttempt,
+  listWhatsAppHistory,
   listAuditLog,
   getCashTotals,
   getOpenCashSession,

@@ -4,3 +4,7 @@ appengine-generated/
 node_modules
 dist/
 backups/automaticos/
+backups/schema-migrations/
+.env
+.env.*
+config/whatsapp-secrets*
