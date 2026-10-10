@@ -65,11 +65,11 @@ Uma migração aditiva adiciona `Clientes.data_vencimento`, `Clientes.whatsapp_o
 
 ### Regras e limites
 
-O processo verifica clientes a cada 30 minutos enquanto o app está aberto. Ele respeita a janela horária local configurada, limite diário, saldo, vencimento, consentimento e intervalo de atraso. Pode enviar um lembrete durante os dias de antecedência configurados, um evento no vencimento e cobranças repetidas no intervalo definido depois do vencimento. O identificador único do evento impede duplicatas por cliente, tipo e data; um evento que ficou em estado “enviando” após fechamento inesperado não é repetido automaticamente, para evitar uma possível duplicidade. Falhas tentam novamente até três vezes, separadas por uma hora.
+O processo verifica clientes a cada 30 minutos enquanto o app está aberto. O envio automático só considera vencimentos anteriores à data de hoje; não envia lembretes antes nem no próprio dia do vencimento. Depois do vencimento, respeita a janela horária local, limite diário, saldo, consentimento e intervalo configurado. O identificador único do evento impede duplicatas por cliente, tipo e data; um evento que ficou em estado “enviando” após fechamento inesperado não é repetido automaticamente, para evitar uma possível duplicidade. Falhas tentam novamente até três vezes, separadas por uma hora.
 
 O histórico registra tentativas, falhas e IDs de mensagem. `aceito_api` significa apenas que a API aceitou a solicitação; sem webhooks configurados, o app não confirma entrega. O aplicativo precisa estar aberto e o computador conectado durante a janela para processar cobranças. Não há serviço Windows separado.
 
-O vencimento é um único próximo vencimento por cliente, não uma agenda de parcelas. O app não importa vencimentos anteriores automaticamente. Atualize a data no cadastro depois de combinar o próximo pagamento. Não há recebimento de solicitações de descadastro por webhook; remova o consentimento no cadastro quando o cliente pedir para parar.
+O campo de vencimento é apenas informativo e não define atraso. Em **Hoje** e no painel WhatsApp, um cliente com saldo fica regular até 29 dias, aparece em atenção entre 30 e 44 dias, e entra em atraso no 45º dia desde a compra fiada mais recente ou o último pagamento real, o que tiver ocorrido por último. A data digitada no cadastro não participa dessa contagem. A automação respeita essa mesma regra e só considera clientes com telefone válido e autorização registrada. Não há recebimento de solicitações de descadastro por webhook; remova o consentimento no cadastro quando o cliente pedir para parar.
 
 ### Executar e testar
 

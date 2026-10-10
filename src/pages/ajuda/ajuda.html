@@ -54,11 +54,15 @@
 
       <article id="clientes" class="help-section">
         <h2>Clientes e cobranca</h2>
-        <p>Cadastre cliente para acompanhar fiado, pagamentos, telefone e historico. Qualquer pagamento parcial reinicia a contagem de atraso.</p>
+        <p>Cadastre cliente para acompanhar fiado, pagamentos, telefone e historico. A tela Hoje calcula atraso pelo ultimo pagamento ou compra fiada; a data do próximo vencimento impede a cobrança enquanto ainda for hoje ou futura.</p>
         <ul>
-          <li>Cliente entra como atrasado somente com 3 meses ou mais sem pagamento.</li>
+          <li>Cliente com saldo entra como atrasado após 45 dias sem pagamento ou nova compra fiada.</li>
+          <li>Entre 30 e 44 dias, aparece em “Precisam de atenção”; até 29 dias, permanece regular.</li>
+          <li>Pagamento parcial reinicia a contagem. A data digitada no cadastro não altera o cálculo.</li>
+          <li>O campo “Último pagamento registrado” deve conter a data real do pagamento mais recente. Uma data antiga faz a contagem começar no passado.</li>
+          <li>O próximo vencimento é uma data completa única; ele não se repete automaticamente todo mês. Atualize-o quando combinar o próximo pagamento.</li>
           <li>A lista de atraso mostra do maior tempo para o menor.</li>
-          <li>WhatsApp pode ser aberto pelo app quando houver telefone.</li>
+          <li>O rascunho só pode ser aberto se o cliente estiver em atraso, tiver telefone válido e consentimento registrado.</li>
         </ul>
       </article>
 

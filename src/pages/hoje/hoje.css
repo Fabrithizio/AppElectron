@@ -225,6 +225,49 @@ main {
   font-size: 13px;
 }
 
+.collection-template-panel {
+  margin: 10px 14px 14px;
+  padding: 11px;
+  border: 1px solid #d7ddda;
+  border-radius: 7px;
+  background: #f8faf9;
+}
+
+.collection-template-panel summary {
+  color: #0f766e;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.collection-template-panel p {
+  margin: 9px 0;
+  color: #5b6764;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.collection-template-panel textarea {
+  display: block;
+  width: 100%;
+  min-height: 110px;
+  margin-bottom: 9px;
+  padding: 9px;
+  border: 1px solid #cbd5d1;
+  border-radius: 6px;
+  color: #263530;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.collection-template-panel button {
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
 .task-form {
   margin: 12px 14px;
   padding: 14px;
@@ -240,7 +283,7 @@ main {
 
 .task-form-grid {
   display: grid;
-  grid-template-columns: 2fr 1.2fr 1fr;
+  grid-template-columns: 2fr 1.2fr 1fr 1fr;
   gap: 10px;
 }
 
@@ -282,6 +325,41 @@ main {
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 9px;
   padding: 10px 14px 14px;
+}
+
+.task-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 14px 0;
+}
+
+.task-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.task-filter {
+  min-height: 32px;
+  padding: 5px 10px;
+  border: 1px solid #cbd5d1;
+  background: #ffffff;
+  color: #33423f;
+  font-size: 12px;
+}
+
+.task-filter.is-active {
+  border-color: #0f766e;
+  background: #e6f2ef;
+  color: #115e59;
+}
+
+.task-count {
+  color: #5b6764;
+  font-size: 12px;
+  text-align: right;
 }
 
 .task-item {
@@ -331,6 +409,10 @@ main {
   color: #172121;
 }
 
+.task-item .task-pause-button {
+  margin-left: 6px;
+}
+
 .panel {
   min-height: 260px;
 }
@@ -348,8 +430,6 @@ main {
 .list {
   display: grid;
   gap: 8px;
-  max-height: 320px;
-  overflow: auto;
   padding: 12px;
 }
 
@@ -390,6 +470,13 @@ main {
 
 .collection-group .list {
   padding: 10px 0 12px;
+}
+
+.show-more-button {
+  justify-self: start;
+  min-height: 34px;
+  margin: 4px 0 2px;
+  padding: 6px 12px;
 }
 
 .item {
@@ -541,6 +628,15 @@ main {
 
   .task-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .task-controls {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .task-count {
+    text-align: left;
   }
 
   .cash-gate-form > div {

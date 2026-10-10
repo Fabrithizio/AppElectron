@@ -17,20 +17,20 @@
     <section class="metrics" aria-label="Resumo">
       <article><span>Clientes com saldo</span><strong id="clientCount">0</strong></article>
       <article><span>Valores pendentes</span><strong id="debtTotal">R$ 0,00</strong></article>
-      <article><span>Vencem hoje</span><strong id="dueToday">0</strong></article>
+      <article><span>Precisam de atenção</span><strong id="dueToday">0</strong></article>
       <article><span>Em atraso</span><strong id="overdue">0</strong></article>
     </section>
     <section class="panel">
       <div class="toolbar">
         <input id="search" type="search" placeholder="Pesquisar nome ou telefone">
-        <select id="statusFilter"><option value="todos">Todas as situações</option><option value="vence_hoje">Vencimento hoje</option><option value="atrasado">Em atraso</option><option value="futuro">Vencimento futuro</option><option value="sem_vencimento">Sem vencimento</option></select>
+        <select id="statusFilter"><option value="todos">Todas as situações</option><option value="atrasado">Em atraso (45+ dias)</option><option value="atencao">Atenção (30–44 dias)</option><option value="em_dia">Regular (até 29 dias)</option><option value="sem_data">Sem compra fiada ou pagamento registrado</option></select>
         <select id="delayFilter"><option value="todos">Qualquer atraso</option><option value="1-7">1 a 7 dias</option><option value="8-30">8 a 30 dias</option><option value="31+">Mais de 30 dias</option></select>
-        <label>Vencimento de <input id="dateFrom" type="date"></label>
+        <label>Referência de <input id="dateFrom" type="date"></label>
         <label>até <input id="dateTo" type="date"></label>
       </div>
       <div class="actions"><button id="previewButton" type="button" class="secondary">Visualizar mensagem</button><button id="draftButton" type="button">Abrir rascunho no WhatsApp</button><button id="integrationButton" type="button" class="secondary">Testar integração</button></div>
       <p id="notice" role="status" class="notice"></p>
-      <div class="table-wrap"><table><thead><tr><th></th><th>Cliente</th><th>Saldo</th><th>Vencimento</th><th>Situação</th><th>Telefone / consentimento</th></tr></thead><tbody id="clientRows"></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th></th><th>Cliente</th><th>Saldo</th><th>Última compra fiada/pagamento</th><th>Situação</th><th>Telefone / consentimento</th></tr></thead><tbody id="clientRows"></tbody></table></div>
     </section>
     <section class="panel history-panel"><h2>Histórico de envios e falhas</h2><div id="historyRows" class="history-list"></div></section>
     <details id="adminSettings" class="panel admin-panel" hidden>
@@ -49,7 +49,6 @@
           <label>Modelo aprovado: vencimento<input id="templateDue"></label>
           <label>Modelo aprovado: atraso<input id="templateOverdue"></label>
           <label>Modelo aprovado: teste<input id="templateTest"></label>
-          <label>Dias antes do vencimento<input id="beforeDays" type="number" min="0" max="30" value="3"></label>
           <label>Intervalo em atraso (dias)<input id="intervalDays" type="number" min="1" max="90" value="7"></label>
           <label>Horário inicial permitido<input id="sendStart" type="time" value="09:00"></label>
           <label>Horário final permitido<input id="sendEnd" type="time" value="18:00"></label>

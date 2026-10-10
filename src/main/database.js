@@ -223,9 +223,26 @@ async function initializeDatabase() {
       criado_por TEXT,
       criado_em TEXT NOT NULL,
       concluido_por TEXT,
-      concluido_em TEXT
+      concluido_em TEXT,
+      rotina_id INTEGER
     )
   `);
+
+  await run(`
+    CREATE TABLE IF NOT EXISTS RotinasOperacionais (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      titulo TEXT NOT NULL,
+      detalhes TEXT,
+      responsavel_username TEXT NOT NULL,
+      frequencia TEXT NOT NULL,
+      proxima_data TEXT NOT NULL,
+      ativa INTEGER NOT NULL DEFAULT 1,
+      criado_por TEXT,
+      criado_em TEXT NOT NULL
+    )
+  `);
+  await ensureColumn('TarefasOperacionais', 'rotina_id', 'INTEGER');
+  await run('CREATE UNIQUE INDEX IF NOT EXISTS idx_tarefas_rotina_data ON TarefasOperacionais (rotina_id, data_prevista)');
 
   await run(`
     CREATE TABLE IF NOT EXISTS CaixaFechamentos (
@@ -1126,17 +1143,63 @@ async function unmarkManualCollectionSent(clienteId, month) {
   );
 }
 
+function addDaysToDate(dateString, days) {
+  const date = new Date(`${dateString}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function nextRoutineDate(frequency, dateString) {
+  let nextDate = addDaysToDate(dateString, frequency === 'weekly' ? 7 : 1);
+  if (frequency === 'weekdays') {
+    while ([0, 6].includes(new Date(`${nextDate}T00:00:00.000Z`).getUTCDay())) {
+      nextDate = addDaysToDate(nextDate, 1);
+    }
+  }
+  return nextDate;
+}
+
+function firstRoutineDateOnOrAfter(frequency, dateString) {
+  let nextDate = dateString;
+  if (frequency === 'weekdays') {
+    while ([0, 6].includes(new Date(`${nextDate}T00:00:00.000Z`).getUTCDay())) {
+      nextDate = addDaysToDate(nextDate, 1);
+    }
+  }
+  return nextDate;
+}
+
 async function listOperationalTasks({ responsavelUsername, includeAll = false, today }) {
-  const scope = includeAll ? '' : ' AND responsavel_username = ?';
-  const params = includeAll
-    ? [today, today]
-    : [today, today, responsavelUsername];
+  const throughDate = addDaysToDate(today, 7);
+  const routines = await all('SELECT * FROM RotinasOperacionais WHERE ativa = 1');
+  for (const routine of routines) {
+    let nextDate = routine.proxima_data;
+    if (nextDate < today) nextDate = firstRoutineDateOnOrAfter(routine.frequencia, today);
+    while (nextDate <= throughDate) {
+      await createOperationalTask({
+        titulo: routine.titulo,
+        detalhes: routine.detalhes,
+        responsavelUsername: routine.responsavel_username,
+        dataPrevista: nextDate,
+        criadoPor: routine.criado_por,
+        rotinaId: routine.id,
+      });
+      nextDate = nextRoutineDate(routine.frequencia, nextDate);
+    }
+    if (nextDate !== routine.proxima_data) {
+      await run('UPDATE RotinasOperacionais SET proxima_data = ? WHERE id = ?', [nextDate, routine.id]);
+    }
+  }
+
+  const scope = includeAll ? '' : ' AND t.responsavel_username = ?';
+  const params = includeAll ? [] : [responsavelUsername];
   return all(
-    `SELECT * FROM TarefasOperacionais
-      WHERE data_prevista <= ?
-        AND (status = 'pendente' OR DATE(concluido_em) = ?)
+    `SELECT t.*, r.frequencia AS rotina_frequencia, r.ativa AS rotina_ativa
+       FROM TarefasOperacionais t
+       LEFT JOIN RotinasOperacionais r ON r.id = t.rotina_id
+      WHERE (t.status = 'pendente' OR t.concluido_em IS NOT NULL)
         ${scope}
-      ORDER BY CASE status WHEN 'pendente' THEN 0 ELSE 1 END, data_prevista, id`,
+      ORDER BY CASE t.status WHEN 'pendente' THEN 0 ELSE 1 END, t.data_prevista, t.id`,
     params,
   );
 }
@@ -1145,12 +1208,19 @@ async function getOperationalTask(id) {
   return get('SELECT * FROM TarefasOperacionais WHERE id = ?', [id]);
 }
 
-async function createOperationalTask({ titulo, detalhes, responsavelUsername, dataPrevista, criadoPor }) {
+async function createOperationalTask({ titulo, detalhes, responsavelUsername, dataPrevista, criadoPor, rotinaId = null }) {
+  if (rotinaId) {
+    const existing = await get(
+      'SELECT * FROM TarefasOperacionais WHERE rotina_id = ? AND data_prevista = ?',
+      [rotinaId, dataPrevista],
+    );
+    if (existing) return existing;
+  }
   const result = await run(
     `INSERT INTO TarefasOperacionais
-      (titulo, detalhes, responsavel_username, data_prevista, status, criado_por, criado_em)
-      VALUES (?, ?, ?, ?, 'pendente', ?, ?)`,
-    [titulo, detalhes || null, responsavelUsername, dataPrevista, criadoPor || null, nowIsoDateTime()],
+      (titulo, detalhes, responsavel_username, data_prevista, status, criado_por, criado_em, rotina_id)
+      VALUES (?, ?, ?, ?, 'pendente', ?, ?, ?)`,
+    [titulo, detalhes || null, responsavelUsername, dataPrevista, criadoPor || null, nowIsoDateTime(), rotinaId],
   );
   const task = await getOperationalTask(result.id);
   await writeAuditLog({
@@ -1161,6 +1231,57 @@ async function createOperationalTask({ titulo, detalhes, responsavelUsername, da
     dadosDepois: task,
   });
   return task;
+}
+
+async function createOperationalRoutine({ titulo, detalhes, responsavelUsername, dataInicio, frequencia, criadoPor }) {
+  const nextDate = firstRoutineDateOnOrAfter(frequencia, dataInicio);
+  const result = await run(
+    `INSERT INTO RotinasOperacionais
+      (titulo, detalhes, responsavel_username, frequencia, proxima_data, ativa, criado_por, criado_em)
+      VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
+    [titulo, detalhes || null, responsavelUsername, frequencia, nextDate, criadoPor || null, nowIsoDateTime()],
+  );
+  const routine = await get('SELECT * FROM RotinasOperacionais WHERE id = ?', [result.id]);
+  await writeAuditLog({
+    entidade: 'RotinasOperacionais',
+    entidadeId: routine.id,
+    acao: 'CRIAR_ROTINA_TAREFA',
+    usuario: criadoPor,
+    dadosDepois: routine,
+  });
+  await createOperationalTask({
+    titulo,
+    detalhes,
+    responsavelUsername,
+    dataPrevista: nextDate,
+    criadoPor,
+    rotinaId: routine.id,
+  });
+  await run('UPDATE RotinasOperacionais SET proxima_data = ? WHERE id = ?', [
+    nextRoutineDate(frequencia, nextDate),
+    routine.id,
+  ]);
+  return routine;
+}
+
+async function pauseOperationalRoutine(id, usuario, today) {
+  const routine = await get('SELECT * FROM RotinasOperacionais WHERE id = ?', [id]);
+  if (!routine || !routine.ativa) return { paused: false };
+  await run('UPDATE RotinasOperacionais SET ativa = 0 WHERE id = ?', [id]);
+  await run(
+    "DELETE FROM TarefasOperacionais WHERE rotina_id = ? AND status = 'pendente' AND data_prevista > ?",
+    [id, today],
+  );
+  const updated = await get('SELECT * FROM RotinasOperacionais WHERE id = ?', [id]);
+  await writeAuditLog({
+    entidade: 'RotinasOperacionais',
+    entidadeId: id,
+    acao: 'PAUSAR_ROTINA_TAREFA',
+    usuario,
+    dadosAntes: routine,
+    dadosDepois: updated,
+  });
+  return { paused: true, routine: updated };
 }
 
 async function completeOperationalTask(id, usuario, completedDate) {
@@ -1651,6 +1772,8 @@ module.exports = {
   listOperationalTasks,
   getOperationalTask,
   createOperationalTask,
+  createOperationalRoutine,
+  pauseOperationalRoutine,
   completeOperationalTask,
   reopenOperationalTask,
   listClientesWithPaymentStatus,

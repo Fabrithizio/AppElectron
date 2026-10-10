@@ -1,7 +1,7 @@
 const { listClientesWithPaymentStatus, createWhatsAppEvent, getWhatsAppEvent,
   countWhatsAppAttemptsToday, beginWhatsAppAttempt, finishWhatsAppAttempt } = require('./database');
 const whatsapp = require('./whatsapp');
-const { eventForDueDate, isEligible, canSendAutomatically } = require('./whatsapp-rules');
+const { overdueEventForCollection, isEligible, canSendAutomatically } = require('./whatsapp-rules');
 
 function todayLocal() {
   const now = new Date();
@@ -39,12 +39,12 @@ async function runVerification({ manual = false } = {}) {
       if (dailyAttempts >= settings.dailyLimit) break;
       checked += 1;
       if (!isEligible(customer)) { skipped += 1; continue; }
-      const kind = eventForDueDate(customer.data_vencimento, today, settings.beforeDays, settings.intervalDays);
-      if (!kind) continue;
+      const kind = overdueEventForCollection(customer, today, settings.intervalDays);
+      if (!kind) { skipped += 1; continue; }
       if (dryRun) { simulated += 1; dailyAttempts += 1; continue; }
       const template = settings.templates[kind];
       if (!template) { skipped += 1; continue; }
-      const eventDate = kind === 'atraso' ? today : customer.data_vencimento;
+      const eventDate = today;
       const existing = await getWhatsAppEvent(customer.id, kind, eventDate);
       if (existing) {
         const age = existing.tentativa_em ? Date.now() - new Date(existing.tentativa_em).getTime() : Infinity;

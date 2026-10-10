@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { DatabaseSync } = require('node:sqlite');
-const { statusForDueDate, eventForDueDate, isEligible, isValidPhone, canSendAutomatically } = require('../src/main/whatsapp-rules');
+const { statusForDueDate, eventForDueDate, overdueEventForDueDate, collectionStatus, overdueEventForCollection, isEligible, isValidPhone, canSendAutomatically } = require('../src/main/whatsapp-rules');
 const { whatsappEventsSchemaSql } = require('../src/main/whatsapp-schema');
 
 test('cliente sem dívida não é elegível', () => assert.equal(isEligible({ divida: 0, data_vencimento: '2026-10-09', whatsapp_opt_in: 1 }), false));
@@ -16,7 +16,35 @@ test('vencimento passado é atraso e observa o intervalo configurado', () => {
   assert.equal(eventForDueDate('2026-10-02', '2026-10-09', 3, 7), 'atraso');
   assert.equal(eventForDueDate('2026-10-05', '2026-10-09', 3, 7), null);
 });
-test('pagamento parcial preserva elegibilidade enquanto houver saldo', () => assert.equal(isEligible({ divida: 10.5, data_vencimento: '2026-10-09', whatsapp_opt_in: 1 }), true));
+test('automação só envia em dia de atraso, nunca antes ou no vencimento', () => {
+  assert.equal(overdueEventForDueDate('2026-10-10', '2026-10-09', 7), null);
+  assert.equal(overdueEventForDueDate('2026-10-09', '2026-10-09', 7), null);
+  assert.equal(overdueEventForDueDate('2026-10-02', '2026-10-09', 7), 'atraso');
+  assert.equal(overdueEventForDueDate('2026-10-05', '2026-10-09', 7), null);
+});
+test('novo cálculo usa compra fiada e começa atenção em 30 e atraso em 45 dias', () => {
+  const base = { divida: 25, dataPagamento: '2020-01-01', data_vencimento: '2026-10-10' };
+  assert.equal(collectionStatus({ ...base, ultima_compra_fiado: '2026-09-11' }, '2026-10-10').status, 'em_dia');
+  assert.equal(collectionStatus({ ...base, ultima_compra_fiado: '2026-09-11' }, '2026-10-10').daysSinceReference, 29);
+  assert.equal(collectionStatus({ ...base, ultima_compra_fiado: '2026-08-27' }, '2026-10-10').status, 'atencao');
+  assert.equal(collectionStatus({ ...base, ultima_compra_fiado: '2026-08-26' }, '2026-10-10').status, 'atrasado');
+});
+test('pagamento parcial mais recente reinicia a contagem e vence compra antiga', () => {
+  const customer = { divida: 25, ultima_compra_fiado: '2026-07-01', ultima_data_pagamento: '2026-09-20' };
+  assert.deepEqual(collectionStatus(customer, '2026-10-10'), { status: 'em_dia', referenceDate: '2026-09-20', daysSinceReference: 20 });
+});
+test('data do cadastro não vira referência e data de vencimento não cria atraso', () => {
+  const customer = { divida: 25, dataPagamento: '2020-01-01', data_vencimento: '2026-01-01' };
+  assert.equal(collectionStatus(customer, '2026-10-10').status, 'sem_data');
+  assert.equal(overdueEventForCollection({ ...customer, ultima_compra_fiado: '2026-08-27' }, '2026-10-10', 7), null);
+});
+test('mensagem automática só fica elegível no 45º dia e respeita o intervalo', () => {
+  const customer = { divida: 20, ultima_compra_fiado: '2026-08-26' };
+  assert.equal(overdueEventForCollection(customer, '2026-10-09', 7), null);
+  assert.equal(overdueEventForCollection(customer, '2026-10-10', 7), 'atraso');
+  assert.equal(overdueEventForCollection(customer, '2026-10-17', 7), 'atraso');
+});
+test('pagamento parcial preserva elegibilidade enquanto houver saldo e telefone autorizado', () => assert.equal(isEligible({ divida: 10.5, telefone: '11999990000', whatsapp_opt_in: 1 }), true));
 test('pagamento parcial reduz o saldo e pagamento total cancela eventos futuros', () => {
   const db = new DatabaseSync(':memory:');
   db.exec('CREATE TABLE Clientes (id INTEGER PRIMARY KEY, divida REAL); INSERT INTO Clientes VALUES (1, 100);');
@@ -29,8 +57,9 @@ test('pagamento parcial reduz o saldo e pagamento total cancela eventos futuros'
   assert.equal(db.prepare('SELECT status FROM WhatsAppEnvios').get().status, 'cancelado'); db.close();
 });
 test('cliente sem consentimento ou inativado não é elegível', () => {
-  assert.equal(isEligible({ divida: 20, data_vencimento: '2026-10-09', whatsapp_opt_in: 0 }), false);
-  assert.equal(isEligible({ divida: 20, data_vencimento: '2026-10-09', whatsapp_opt_in: 1, ativo: 0 }), false);
+  assert.equal(isEligible({ divida: 20, telefone: '11999990000', whatsapp_opt_in: 0 }), false);
+  assert.equal(isEligible({ divida: 20, telefone: '11999990000', whatsapp_opt_in: 1, ativo: 0 }), false);
+  assert.equal(isEligible({ divida: 20, whatsapp_opt_in: 1 }), false);
 });
 test('telefone ausente ou inválido é identificado', () => {
   assert.equal(isValidPhone(''), false);

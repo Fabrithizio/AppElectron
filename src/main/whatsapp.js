@@ -4,6 +4,7 @@ const { app, safeStorage } = require('electron');
 const { normalizePhone } = require('./whatsapp-rules');
 
 const defaultDraftTemplates = {
+  cobrancaManual: 'Olá, *{nome}*! 😊\n\nAqui é da *{loja}*.\n\nNo nosso controle, consta um saldo pendente de *{valor}*. Você poderia, por gentileza, confirmar se já realizou o pagamento?\n\nCaso já tenha pago, por favor, desconsidere esta mensagem. Ficamos à disposição para ajudar! 🤝',
   lembrete: 'Olá, {nome}! Passando para lembrar que o pagamento de {valor} está previsto para {vencimento}. Qualquer dúvida, entre em contato com {loja}.',
   vencimento: 'Olá, {nome}! Hoje é a data prevista para o pagamento de {valor} referente à sua conta na {loja}. Caso já tenha pago, por favor, desconsidere esta mensagem.',
   atraso: 'Olá, {nome}! Consta em nosso sistema um saldo pendente de {valor}, com vencimento em {vencimento}. Se já realizou o pagamento, por favor, desconsidere esta mensagem. Caso precise, entre em contato conosco.',
@@ -28,7 +29,7 @@ function getSettings() {
     enabled: stored.enabled === true,
     testMode: stored.testMode !== false,
     automationEnabled: stored.automationEnabled === true,
-    beforeDays: Math.max(0, Math.min(30, Number(stored.beforeDays ?? 3))),
+    beforeDays: 0,
     intervalDays: Math.max(1, Math.min(90, Number(stored.intervalDays ?? 7))),
     sendStart: stored.sendStart || '09:00',
     sendEnd: stored.sendEnd || '18:00',
@@ -39,7 +40,7 @@ function getSettings() {
     authorizedTestNumber: stored.authorizedTestNumber || '',
     templates: stored.templates || { lembrete: '', vencimento: '', atraso: '', teste: '' },
     templateLanguage: stored.templateLanguage || 'pt_BR',
-    draftTemplates: stored.draftTemplates || defaultDraftTemplates,
+    draftTemplates: { ...defaultDraftTemplates, ...(stored.draftTemplates || {}) },
     token,
     configured: Boolean(token && stored.phoneNumberId && stored.apiVersion),
   };
@@ -61,11 +62,12 @@ function saveSettings(input) {
   }
   const previous = readStored();
   const token = String(input.token || '').trim();
+  const previousDraftTemplates = { ...defaultDraftTemplates, ...(previous.draftTemplates || {}) };
   const stored = {
     enabled: input.enabled === true,
     testMode: input.testMode !== false,
     automationEnabled: input.automationEnabled === true,
-    beforeDays: Math.max(0, Math.min(30, Number(input.beforeDays ?? 3))),
+    beforeDays: 0,
     intervalDays: Math.max(1, Math.min(90, Number(input.intervalDays ?? 7))),
     sendStart: /^\d{2}:\d{2}$/.test(input.sendStart) ? input.sendStart : '09:00',
     sendEnd: /^\d{2}:\d{2}$/.test(input.sendEnd) ? input.sendEnd : '18:00',
@@ -77,7 +79,7 @@ function saveSettings(input) {
     templates: Object.fromEntries(['lembrete', 'vencimento', 'atraso', 'teste'].map((kind) => [kind, String((input.templates || {})[kind] || '').trim()])),
     templateLanguage: String(input.templateLanguage || 'pt_BR').trim(),
     draftTemplates: Object.fromEntries(Object.keys(defaultDraftTemplates).map((kind) => [kind,
-      String((input.draftTemplates || {})[kind] || defaultDraftTemplates[kind]).slice(0, 2000)])),
+      String((input.draftTemplates || {})[kind] ?? previousDraftTemplates[kind]).slice(0, 2000)])),
     token: token ? safeStorage.encryptString(token).toString('base64') : input.clearToken ? '' : previous.token || '',
   };
   const file = settingsPath();
@@ -86,9 +88,31 @@ function saveSettings(input) {
   return publicSettings();
 }
 
+function saveDraftTemplate(kind, template) {
+  if (!Object.prototype.hasOwnProperty.call(defaultDraftTemplates, kind)) {
+    throw new Error('Modelo de mensagem inválido.');
+  }
+  const text = String(template || '').trim();
+  if (!text) throw new Error('A mensagem padrão não pode ficar vazia.');
+  const limit = kind === 'cobrancaManual' ? 1500 : 2000;
+  if (text.length > limit) throw new Error(`A mensagem padrão pode ter no máximo ${limit.toLocaleString('pt-BR')} caracteres.`);
+  const previous = readStored();
+  const stored = {
+    ...previous,
+    draftTemplates: { ...defaultDraftTemplates, ...(previous.draftTemplates || {}), [kind]: text },
+  };
+  const file = settingsPath();
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(stored, null, 2), { encoding: 'utf8', mode: 0o600 });
+  return text;
+}
+
 function interpolate(template, customer, storeName, kind) {
-  const overdue = customer.data_vencimento
-    ? Math.max(0, Math.floor((Date.now() - new Date(`${customer.data_vencimento}T00:00:00`).getTime()) / 86400000)) : '';
+  const { collectionStatus } = require('./whatsapp-rules');
+  const today = new Date();
+  const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const { daysSinceReference } = collectionStatus(customer, todayString);
+  const overdue = daysSinceReference === null ? '' : Math.max(0, daysSinceReference - 44);
   return String(template || '').replace(/\{(nome|loja|valor|vencimento|dias_atraso)\}/g, (_match, key) => ({
     nome: customer.nome,
     loja: storeName,
@@ -145,4 +169,4 @@ async function testConnection() {
   return { connected: true, displayPhoneNumber: data.display_phone_number || '' };
 }
 
-module.exports = { getSettings, publicSettings, saveSettings, interpolate, sendCloudTemplate, phoneDigits, normalizePhone, testConnection };
+module.exports = { getSettings, publicSettings, saveSettings, saveDraftTemplate, interpolate, sendCloudTemplate, phoneDigits, normalizePhone, testConnection };

@@ -37,6 +37,8 @@ const {
   listOperationalTasks,
   getOperationalTask,
   createOperationalTask,
+  createOperationalRoutine,
+  pauseOperationalRoutine,
   completeOperationalTask,
   reopenOperationalTask,
   listDespesasByInterval,
@@ -66,7 +68,6 @@ const {
   updateCliente,
   upsertProduto,
   writeAuditLog,
-  listWhatsAppDashboard,
   createWhatsAppEvent,
   beginWhatsAppAttempt,
   finishWhatsAppAttempt,
@@ -74,10 +75,10 @@ const {
 } = require('./database');
 const whatsapp = require('./whatsapp');
 const { runVerification } = require('./whatsapp-automation');
-const { statusForDueDate, isValidPhone, normalizePhone } = require('./whatsapp-rules');
+const { collectionStatus, isValidPhone, normalizePhone, OVERDUE_AFTER_DAYS, ATTENTION_AFTER_DAYS } = require('./whatsapp-rules');
 
 const paymentMethods = ['Pix', 'Especie', 'Fiado', 'Debito', 'Credito'];
-const overdueThresholdDays = 90;
+const overdueThresholdDays = OVERDUE_AFTER_DAYS;
 const projectRoot = path.resolve(__dirname, '..', '..');
 
 function getSenderWindow(event) {
@@ -202,9 +203,8 @@ function formatDelay(days) {
 }
 
 function getReferenceDate(row) {
-  // Qualquer pagamento, mesmo parcial, reinicia a contagem de atraso.
-  // Se houver compra fiada depois do pagamento, a nova compra vira a referencia.
-  const dates = [row.ultima_data_pagamento, row.dataPagamento, row.ultima_compra_fiado]
+  // Conta a partir da ultima compra fiada ou pagamento real, nunca da data digitada no cadastro.
+  const dates = [row.ultima_data_pagamento, row.ultima_compra_fiado]
     .filter(isUsableReferenceDate)
     .sort();
   return dates.length ? dates[dates.length - 1] : null;
@@ -224,7 +224,7 @@ function getCollectionRows(rows) {
       let statusCobranca = 'sem_data';
       if (atrasoDias !== null && atrasoDias >= overdueThresholdDays) {
         statusCobranca = 'atrasado';
-      } else if (atrasoDias !== null && atrasoDias >= 60) {
+      } else if (atrasoDias !== null && atrasoDias >= ATTENTION_AFTER_DAYS) {
         statusCobranca = 'atencao';
       } else if (atrasoDias !== null) {
         statusCobranca = 'em_dia';
@@ -248,6 +248,17 @@ function getCollectionRows(rows) {
     });
 }
 
+async function requireOverdueCollectionClient(clientId) {
+  const id = Number(clientId);
+  if (!Number.isInteger(id) || id < 1) throw new Error('Cliente inválido.');
+  const rows = getOverdueRows(await listClientesWithPaymentStatus());
+  const client = rows.find((row) => row.id === id);
+  if (!client) throw new Error('Este cliente não está em atraso. Atualize a lista antes de preparar a mensagem.');
+  if (Number(client.whatsapp_opt_in) !== 1) throw new Error('Este cliente não autorizou mensagens pelo WhatsApp.');
+  if (!isValidPhone(client.telefone)) throw new Error('Este cliente não possui telefone válido.');
+  return client;
+}
+
 async function handleVerifyPayments(event) {
   const rows = await listClientesWithPaymentStatus();
   const collectionRows = getCollectionRows(rows);
@@ -259,8 +270,8 @@ async function handleVerifyPayments(event) {
       type: attentionRows.length ? 'warning' : 'info',
       title: 'Verificacao de Pagamentos',
       message: attentionRows.length
-        ? `Nao ha clientes com 3 meses ou mais, mas ha clientes chegando perto:\n> ${attentionRows.slice(0, 12).map((row) => `${row.nome.toUpperCase()} - ${formatCurrency(row.divida)} - ${row.atrasoTexto}`).join('\n> ')}`
-        : 'Nao ha clientes com divida vencida ha 3 meses ou mais.',
+        ? `Nao ha clientes com 45 dias ou mais sem movimentacao, mas ha clientes que precisam de atencao:\n> ${attentionRows.slice(0, 12).map((row) => `${row.nome.toUpperCase()} - ${formatCurrency(row.divida)} - ${row.atrasoTexto}`).join('\n> ')}`
+        : 'Nao ha clientes com saldo ha 45 dias ou mais sem pagamento ou nova compra fiada.',
     });
     return;
   }
@@ -272,14 +283,15 @@ async function handleVerifyPayments(event) {
   await dialog.showMessageBox(getSenderWindow(event), {
     type: 'warning',
     title: 'Alerta de Pagamento',
-    message: `Clientes com divida vencida ha 3 meses ou mais:\n> ${overdueNames.join('\n> ')}`,
+    message: `Clientes com saldo ha 45 dias ou mais sem pagamento ou nova compra fiada:\n> ${overdueNames.join('\n> ')}`,
   });
 }
 
 async function openWhatsAppDraft(payload) {
   const phone = normalizePhone(payload && payload.phone);
   if (phone.length < 10 || phone.length > 15) throw new Error('Telefone ausente ou invalido.');
-  const message = String(payload && payload.message || '').slice(0, 1500);
+  const message = String(payload && payload.message || '').trim();
+  if (!message || message.length > 1500) throw new Error('A mensagem deve ter entre 1 e 1.500 caracteres.');
   const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
   await shell.openExternal(url);
   return { opened: true, sent: false };
@@ -288,7 +300,7 @@ async function openWhatsAppDraft(payload) {
 function registerIpcHandlers() {
   ipcMain.handle('whatsapp:dashboard', async () => {
     requirePermission('whatsapp');
-    const rows = await listWhatsAppDashboard();
+    const rows = await listClientesWithPaymentStatus();
     const clients = new Map();
     const history = (await listWhatsAppHistory(200)).map((row) => ({ id: row.id, cliente: row.nome, tipo: row.tipo,
       data_prevista: row.data_prevista, data_vencimento: row.data_vencimento, tentativa_em: row.tentativa_em, status: row.status,
@@ -296,16 +308,17 @@ function registerIpcHandlers() {
       cancelado_em: row.cancelado_em, api_message_id: row.api_message_id }));
     for (const row of rows) {
       if (!clients.has(row.id)) clients.set(row.id, { id: row.id, nome: row.nome, telefone: row.telefone,
-        divida: row.divida, data_vencimento: row.data_vencimento, consent: Number(row.whatsapp_opt_in) === 1 });
+        divida: row.divida, data_vencimento: row.data_vencimento, ultima_data_pagamento: row.ultima_data_pagamento,
+        ultima_compra_fiado: row.ultima_compra_fiado, consent: Number(row.whatsapp_opt_in) === 1 });
     }
     const today = localDateString();
     const list = [...clients.values()].map((client) => {
-      const status = statusForDueDate(client.data_vencimento, today);
-      return { ...client, status, telefoneValido: isValidPhone(client.telefone) };
+      const { status, referenceDate, daysSinceReference } = collectionStatus(client, today);
+      return { ...client, status, referenceDate, daysSinceReference, telefoneValido: isValidPhone(client.telefone) };
     });
     return { clients: list, history, settings: { ...whatsapp.publicSettings(), companyName: loadAppConfig().company.name },
       totals: { clients: list.length, debt: list.reduce((sum, item) => sum + Number(item.divida || 0), 0),
-        today: list.filter((item) => item.status === 'vence_hoje').length,
+        today: list.filter((item) => item.status === 'atencao').length,
         overdue: list.filter((item) => item.status === 'atrasado').length } };
   });
   ipcMain.handle('whatsapp:settings', async () => { requirePermission('whatsapp'); return whatsapp.publicSettings(); });
@@ -326,18 +339,27 @@ function registerIpcHandlers() {
   });
   ipcMain.handle('whatsapp:open-draft', async (_event, payload) => {
     requirePermission('whatsapp');
-    return openWhatsAppDraft(payload);
+    const id = Number(payload && payload.clientId);
+    const client = (await listClientesWithPaymentStatus()).find((row) => row.id === id);
+    if (!client || Number(client.divida) <= 0 || Number(client.whatsapp_opt_in) !== 1
+      || collectionStatus(client, localDateString()).status !== 'atrasado'
+      || !isValidPhone(client.telefone)) {
+      throw new Error('Só é possível preparar uma cobrança para cliente em atraso, com saldo, telefone válido e autorização registrada.');
+    }
+    return openWhatsAppDraft({ phone: client.telefone, message: payload.message });
   });
-  ipcMain.handle('hoje:copy-collection-message', async (_event, message) => {
+  ipcMain.handle('hoje:copy-collection-message', async (_event, payload = {}) => {
     requirePermission('clients');
-    const text = String(message || '').trim();
+    await requireOverdueCollectionClient(payload.clientId);
+    const text = String(payload.message || '').trim();
     if (!text || text.length > 1500) throw new Error('Mensagem invalida.');
     clipboard.writeText(text);
     return { copied: true };
   });
   ipcMain.handle('hoje:open-collection-draft', async (_event, payload) => {
     requirePermission('clients');
-    return openWhatsAppDraft(payload);
+    const client = await requireOverdueCollectionClient(payload && payload.clientId);
+    return openWhatsAppDraft({ phone: client.telefone, message: payload.message });
   });
   ipcMain.handle('hoje:mark-collection-sent', async (_event, clienteId) => {
     requirePermission('clients');
@@ -398,7 +420,11 @@ function registerIpcHandlers() {
     const title = String(payload.titulo || '').trim().slice(0, 100);
     const details = String(payload.detalhes || '').trim().slice(0, 500);
     const dueDate = String(payload.dataPrevista || '');
+    const frequency = String(payload.frequencia || 'once');
     if (!title) throw new Error('Escolha ou informe o nome da tarefa.');
+    if (!['once', 'daily', 'weekdays', 'weekly'].includes(frequency)) {
+      throw new Error('Escolha uma frequência válida para a tarefa.');
+    }
     if (!isValidDate(dueDate)) throw new Error('Informe uma data válida para a tarefa.');
     const parsedDate = new Date(`${dueDate}T00:00:00`);
     if (Number.isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== dueDate) {
@@ -409,13 +435,15 @@ function registerIpcHandlers() {
       : String(payload.responsavelUsername || '');
     const assignee = auth.listUsers().find((item) => item.username === assigneeUsername && item.active !== false);
     if (!assignee) throw new Error('Escolha um funcionário ativo para receber a tarefa.');
-    return createOperationalTask({
+    const taskOptions = {
       titulo: title,
       detalhes: details,
       responsavelUsername: assignee.username,
       dataPrevista: dueDate,
       criadoPor: user.username,
-    });
+    };
+    if (frequency === 'once') return createOperationalTask(taskOptions);
+    return createOperationalRoutine({ ...taskOptions, dataInicio: dueDate, frequencia: frequency });
   });
   ipcMain.handle('hoje:tasks-complete', async (_event, taskId) => {
     const user = requireLogin();
@@ -433,6 +461,12 @@ function registerIpcHandlers() {
     const id = Number(taskId);
     if (!Number.isInteger(id) || id < 1) throw new Error('Tarefa inválida.');
     return reopenOperationalTask(id, currentUsername());
+  });
+  ipcMain.handle('hoje:tasks-pause-routine', async (_event, routineId) => {
+    requireOwnerAccess();
+    const id = Number(routineId);
+    if (!Number.isInteger(id) || id < 1) throw new Error('Rotina inválida.');
+    return pauseOperationalRoutine(id, currentUsername(), localDateString());
   });
   ipcMain.handle('whatsapp:send-test', async () => {
     requireOwnerAccess();
@@ -950,8 +984,7 @@ function registerIpcHandlers() {
     const cobrancas = getCollectionRows(paymentRows);
     const clientesEmAtraso = cobrancas.filter((row) => row.statusCobranca === 'atrasado');
     const clientesParaAcompanhar = cobrancas
-      .filter((row) => ['atencao', 'sem_data'].includes(row.statusCobranca))
-      .slice(0, 12);
+      .filter((row) => ['atencao', 'sem_data'].includes(row.statusCobranca));
 
     const [quantidadeVendasHoje, aniversariantes, cobrancasEnviadasEsteMes] = await Promise.all([
       countVendasByDate(today),
@@ -978,8 +1011,26 @@ function registerIpcHandlers() {
       totalAtrasados: cobrancas.filter((row) => row.statusCobranca === 'atrasado').length,
       totalAtencao: cobrancas.filter((row) => row.statusCobranca === 'atencao').length,
       aniversariantes,
-      estoqueBaixo: estoqueBaixo.slice(0, 12),
+      estoqueBaixo,
     };
+  });
+
+  ipcMain.handle('hoje:collection-template', async () => {
+    requirePermission('clients');
+    return whatsapp.publicSettings().draftTemplates.cobrancaManual;
+  });
+  ipcMain.handle('hoje:collection-template-save', async (_event, template) => {
+    requireOwnerAccess();
+    const before = whatsapp.publicSettings().draftTemplates.cobrancaManual;
+    const saved = whatsapp.saveDraftTemplate('cobrancaManual', template);
+    await writeAuditLog({
+      entidade: 'WhatsApp',
+      acao: 'ALTERAR_MODELO_COBRANCA_MANUAL',
+      usuario: currentUsername(),
+      dadosAntes: { template: before },
+      dadosDepois: { template: saved },
+    });
+    return saved;
   });
 
   ipcMain.handle('produtos:list', async () => {

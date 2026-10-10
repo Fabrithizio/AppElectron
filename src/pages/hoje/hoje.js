@@ -1,5 +1,13 @@
 const { ipcRenderer } = require('electron');
 let companyName = 'a loja';
+let collectionTemplate = 'Olá, *{nome}*! 😊\n\nAqui é da *{loja}*.\n\nNo nosso controle, consta um saldo pendente de *{valor}*. Você poderia, por gentileza, confirmar se já realizou o pagamento?\n\nCaso já tenha pago, por favor, desconsidere esta mensagem. Ficamos à disposição para ajudar! 🤝';
+let collectionTemplateLoaded = false;
+let taskFilter = 'pending';
+let currentTasks = [];
+let currentTaskContext = null;
+let isOwner = false;
+const expandedLists = new Set();
+const initialListSize = 5;
 
 function formatCurrency(value) {
   return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -22,6 +30,30 @@ function emptyMessage(text) {
   return item;
 }
 
+function renderExpandableList(box, rows, createItem, emptyText) {
+  box.replaceChildren();
+  if (!rows.length) {
+    box.appendChild(emptyMessage(emptyText));
+    return;
+  }
+  const expanded = expandedLists.has(box.id);
+  const visibleRows = expanded ? rows : rows.slice(0, initialListSize);
+  visibleRows.forEach((row) => box.appendChild(createItem(row)));
+  if (rows.length > initialListSize) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'secondary show-more-button';
+    button.setAttribute('aria-expanded', String(expanded));
+    button.textContent = expanded ? 'Mostrar menos' : `Mostrar mais (${rows.length - initialListSize})`;
+    button.addEventListener('click', () => {
+      if (expandedLists.has(box.id)) expandedLists.delete(box.id);
+      else expandedLists.add(box.id);
+      renderExpandableList(box, rows, createItem, emptyText);
+    });
+    box.appendChild(button);
+  }
+}
+
 function statusLabel(status) {
   return ({ atrasado: 'Atrasado', atencao: 'Atenção', sem_data: 'Sem data clara', em_dia: 'Em dia' })[status] || status;
 }
@@ -32,19 +64,37 @@ function hasValidPhone(value) {
 }
 
 function collectionMessage(row) {
-  return `Olá, *${row.nome}*! 😊\n\nAqui é da *${companyName}*.\n\nIdentificamos um saldo pendente de *${formatCurrency(row.divida)}* em nosso sistema. Você poderia, por gentileza, confirmar se o pagamento já foi realizado?\n\nCaso já tenha pago, por favor, desconsidere esta mensagem. Se precisar, estamos à disposição! 🤝`;
+  return String(collectionTemplate).replace(/\{(nome|loja|valor|dias_atraso|data_referencia)\}/g, (_match, key) => ({
+    nome: row.nome,
+    loja: companyName,
+    valor: formatCurrency(row.divida),
+    dias_atraso: String(row.atrasoDias === null ? '' : Math.max(0, row.atrasoDias - 44)),
+    data_referencia: row.referencia ? formatDate(row.referencia) : 'não disponível',
+  })[key]);
+}
+
+function reusableCollectionTemplate(message, row) {
+  const values = [
+    [formatCurrency(row.divida), '{valor}'],
+    [row.referencia ? formatDate(row.referencia) : '', '{data_referencia}'],
+    [String(row.atrasoDias === null ? '' : Math.max(0, row.atrasoDias - 44)), '{dias_atraso}'],
+    [companyName, '{loja}'],
+    [row.nome, '{nome}'],
+  ];
+  return values.reduce((template, [value, placeholder]) => value ? template.split(value).join(placeholder) : template, String(message));
 }
 
 function birthdayMessage(cliente) {
   return `Olá, *${cliente.nome}*! 🎉\n\nA equipe da *${companyName}* deseja a você um feliz aniversário, com muita saúde e alegria. Aproveite muito o seu dia! 🥳`;
 }
 
-function addMessageEditor(item, { name, phone, message, noticeId }) {
+function addMessageEditor(item, { clientId, name, message, noticeId, row = null }) {
   const details = document.createElement('details');
   const summary = document.createElement('summary');
   summary.textContent = 'Ver e editar mensagem';
   const editor = document.createElement('textarea');
   editor.className = 'message-editor';
+  editor.maxLength = 1500;
   editor.setAttribute('aria-label', `Mensagem para ${name}`);
   editor.value = message;
   const actions = document.createElement('div');
@@ -55,7 +105,7 @@ function addMessageEditor(item, { name, phone, message, noticeId }) {
   copyButton.textContent = 'Copiar mensagem';
   copyButton.addEventListener('click', async () => {
     try {
-      await ipcRenderer.invoke('hoje:copy-collection-message', editor.value);
+      await ipcRenderer.invoke('hoje:copy-collection-message', { clientId, message: editor.value });
       setText(noticeId, `Mensagem de ${name} copiada. Revise antes de enviar.`);
     } catch (error) {
       setText(noticeId, error.message || 'Não foi possível copiar a mensagem.');
@@ -66,13 +116,32 @@ function addMessageEditor(item, { name, phone, message, noticeId }) {
   openButton.textContent = 'Abrir WhatsApp';
   openButton.addEventListener('click', async () => {
     try {
-      await ipcRenderer.invoke('hoje:open-collection-draft', { phone, message: editor.value });
+      await ipcRenderer.invoke('hoje:open-collection-draft', { clientId, phone, message: editor.value });
       setText(noticeId, `Conversa de ${name} aberta com o texto pronto. Confira e envie pelo WhatsApp.`);
     } catch (error) {
       setText(noticeId, error.message || 'Não foi possível abrir o WhatsApp.');
     }
   });
   actions.append(copyButton, openButton);
+  if (isOwner && row) {
+    const saveDefaultButton = document.createElement('button');
+    saveDefaultButton.type = 'button';
+    saveDefaultButton.className = 'secondary';
+    saveDefaultButton.textContent = 'Salvar edição como padrão';
+    saveDefaultButton.addEventListener('click', async () => {
+      saveDefaultButton.disabled = true;
+      try {
+        collectionTemplate = await ipcRenderer.invoke('hoje:collection-template-save', reusableCollectionTemplate(editor.value, row));
+        document.getElementById('collectionTemplateInput').value = collectionTemplate;
+        setText(noticeId, 'Mensagem salva como padrão. Nome, saldo e referência serão preenchidos para cada cliente.');
+      } catch (error) {
+        setText(noticeId, error.message || 'Não foi possível salvar a mensagem padrão.');
+      } finally {
+        saveDefaultButton.disabled = false;
+      }
+    });
+    actions.appendChild(saveDefaultButton);
+  }
   details.append(summary, editor, actions);
   item.appendChild(details);
 }
@@ -128,14 +197,8 @@ function renderSentConfirmation(item, row, sentThisMonth) {
 
 function renderOverdue(rows, sentThisMonth = {}) {
   const box = document.getElementById('overdueList');
-  box.replaceChildren();
   setText('overdueMessageCount', String(rows.length));
-  if (!rows.length) {
-    box.appendChild(emptyMessage('Nenhum cliente em atraso.'));
-    return;
-  }
-
-  rows.forEach((row) => {
+  renderExpandableList(box, rows, (row) => {
     const item = document.createElement('div');
     item.className = 'item danger';
     const title = document.createElement('strong');
@@ -149,10 +212,11 @@ function renderOverdue(rows, sentThisMonth = {}) {
 
     if (Number(row.whatsapp_opt_in) === 1 && hasValidPhone(row.telefone)) {
       addMessageEditor(item, {
+        clientId: row.id,
         name: row.nome,
-        phone: row.telefone,
         message: collectionMessage(row),
         noticeId: 'collectionNotice',
+        row,
       });
     } else {
       const notice = document.createElement('span');
@@ -162,18 +226,13 @@ function renderOverdue(rows, sentThisMonth = {}) {
         : 'Sem autorização de WhatsApp registrada. Confirme a autorização no cadastro antes de enviar.';
       item.appendChild(notice);
     }
-    box.appendChild(item);
-  });
+    return item;
+  }, 'Nenhum cliente em atraso.');
 }
 
 function renderAttention(rows) {
   const box = document.getElementById('attentionList');
-  box.replaceChildren();
-  if (!rows.length) {
-    box.appendChild(emptyMessage('Nenhum cliente precisa de atenção agora.'));
-    return;
-  }
-  rows.forEach((row) => {
+  renderExpandableList(box, rows, (row) => {
     const item = document.createElement('div');
     item.className = `item ${row.statusCobranca === 'atencao' ? 'warning' : ''}`;
     const title = document.createElement('strong');
@@ -181,18 +240,13 @@ function renderAttention(rows) {
     const meta = document.createElement('span');
     meta.textContent = `${formatCurrency(row.divida)} | referência ${formatDate(row.referencia)} | ${row.atrasoTexto}`;
     item.append(title, meta);
-    box.appendChild(item);
-  });
+    return item;
+  }, 'Nenhum cliente precisa de atenção agora.');
 }
 
 function renderBirthdays(rows) {
   const box = document.getElementById('birthdayList');
-  box.replaceChildren();
-  if (!rows.length) {
-    box.appendChild(emptyMessage('Nenhum aniversariante hoje.'));
-    return;
-  }
-  rows.forEach((cliente) => {
+  renderExpandableList(box, rows, (cliente) => {
     const item = document.createElement('div');
     item.className = 'item';
     const title = document.createElement('strong');
@@ -208,18 +262,13 @@ function renderBirthdays(rows) {
         noticeId: 'collectionNotice',
       });
     }
-    box.appendChild(item);
-  });
+    return item;
+  }, 'Nenhum aniversariante hoje.');
 }
 
 function renderStock(rows) {
   const box = document.getElementById('stockList');
-  box.replaceChildren();
-  if (!rows.length) {
-    box.appendChild(emptyMessage('Nenhum produto abaixo do mínimo.'));
-    return;
-  }
-  rows.forEach((produto) => {
+  renderExpandableList(box, rows, (produto) => {
     const item = document.createElement('div');
     item.className = 'item danger';
     const title = document.createElement('strong');
@@ -227,8 +276,8 @@ function renderStock(rows) {
     const meta = document.createElement('span');
     meta.textContent = `Qtd. ${produto.quantidade} | mínimo ${produto.estoque_minimo || 0}`;
     item.append(title, meta);
-    box.appendChild(item);
-  });
+    return item;
+  }, 'Nenhum produto abaixo do mínimo.');
 }
 
 function getLocalDateInputValue() {
@@ -245,8 +294,14 @@ function renderTaskCard(task, context, names) {
   const title = document.createElement('strong');
   title.textContent = task.titulo;
   const due = document.createElement('span');
-  due.textContent = `Responsável: ${names[task.responsavel_username] || task.responsavel_username} · ${isComplete ? 'Concluída' : task.data_prevista < today ? 'Atrasada' : 'Prazo'}: ${formatDate(isComplete ? task.concluido_em : task.data_prevista)}`;
+  due.textContent = `Responsável: ${names[task.responsavel_username] || task.responsavel_username} · Prazo: ${formatDate(task.data_prevista)}${isComplete ? ` · Concluída em ${formatDate(task.concluido_em)}` : task.data_prevista < today ? ' · Atrasada' : ''}`;
   item.append(title, due);
+
+  if (task.rotina_frequencia) {
+    const routineLabel = document.createElement('span');
+    routineLabel.textContent = `Rotina ${({ daily: 'diária', weekdays: 'em dias úteis', weekly: 'semanal' })[task.rotina_frequencia] || ''}`;
+    item.appendChild(routineLabel);
+  }
 
   if (task.detalhes) {
     const details = document.createElement('span');
@@ -283,7 +338,58 @@ function renderTaskCard(task, context, names) {
     });
     item.appendChild(action);
   }
+
+  if (context.isOwner && task.rotina_id && task.rotina_ativa) {
+    const pauseButton = document.createElement('button');
+    pauseButton.type = 'button';
+    pauseButton.className = 'secondary task-pause-button';
+    pauseButton.textContent = 'Pausar rotina';
+    pauseButton.addEventListener('click', async () => {
+      if (!window.confirm(`Pausar a rotina “${task.titulo}”? As próximas ocorrências serão canceladas.`)) return;
+      pauseButton.disabled = true;
+      try {
+        await ipcRenderer.invoke('hoje:tasks-pause-routine', task.rotina_id);
+        await loadTasks();
+        setText('tasksNotice', 'Rotina pausada. As tarefas já concluídas foram mantidas.');
+      } catch (error) {
+        pauseButton.disabled = false;
+        setText('tasksNotice', error.message || 'Não foi possível pausar a rotina.');
+      }
+    });
+    item.appendChild(pauseButton);
+  }
   return item;
+}
+
+function renderTaskList() {
+  const list = document.getElementById('taskList');
+  const allCount = currentTasks.length;
+  const pendingCount = currentTasks.filter((task) => task.status === 'pendente').length;
+  const completedCount = allCount - pendingCount;
+  const today = getLocalDateInputValue();
+  const overdueCount = currentTasks.filter((task) => task.status === 'pendente' && task.data_prevista < today).length;
+  setText('taskCount', `${pendingCount} pendente(s) · ${overdueCount} atrasada(s) · ${completedCount} concluída(s)`);
+
+  const tasks = currentTasks.filter((task) => {
+    if (taskFilter === 'pending') return task.status === 'pendente';
+    if (taskFilter === 'completed') return task.status === 'concluida';
+    return true;
+  });
+  if (!tasks.length) {
+    list.replaceChildren();
+    const messages = {
+      pending: currentTaskContext.isOwner
+        ? 'Nenhuma tarefa pendente. As tarefas dos próximos dias também aparecem aqui.'
+        : 'Você não tem tarefas pendentes ou próximas.',
+      completed: 'Nenhuma tarefa concluída para mostrar.',
+      all: 'Nenhuma tarefa cadastrada ainda.',
+    };
+    list.appendChild(emptyMessage(messages[taskFilter]));
+    return;
+  }
+  const names = Object.fromEntries(currentTaskContext.users.map((user) => [user.username, user.name]));
+  names[currentTaskContext.user.username] = currentTaskContext.user.name;
+  renderExpandableList(list, tasks, (task) => renderTaskCard(task, currentTaskContext, names), 'Nenhuma tarefa cadastrada ainda.');
 }
 
 async function loadTasks() {
@@ -293,6 +399,8 @@ async function loadTasks() {
   ]);
   const form = document.getElementById('taskForm');
   form.hidden = !context.isOwner;
+  currentTasks = tasks;
+  currentTaskContext = context;
 
   if (context.isOwner) {
     const assigneeSelect = document.getElementById('taskAssignee');
@@ -315,18 +423,20 @@ async function loadTasks() {
     }
   }
 
-  const list = document.getElementById('taskList');
-  list.replaceChildren();
-  if (!tasks.length) {
-    list.appendChild(emptyMessage(context.isOwner
-      ? 'Nenhuma tarefa pendente para hoje. Use os modelos acima para atribuir uma.'
-      : 'Você não tem tarefas pendentes para hoje.'));
-    return;
-  }
-  const names = Object.fromEntries(context.users.map((user) => [user.username, user.name]));
-  names[context.user.username] = context.user.name;
-  tasks.forEach((task) => list.appendChild(renderTaskCard(task, context, names)));
+  renderTaskList();
 }
+
+document.querySelectorAll('[data-task-filter]').forEach((button) => {
+  button.addEventListener('click', () => {
+    taskFilter = button.dataset.taskFilter;
+    document.querySelectorAll('[data-task-filter]').forEach((filter) => {
+      const selected = filter === button;
+      filter.classList.toggle('is-active', selected);
+      filter.setAttribute('aria-pressed', String(selected));
+    });
+    renderTaskList();
+  });
+});
 
 document.getElementById('taskPreset').addEventListener('change', (event) => {
   const isCustom = event.currentTarget.value === '__custom';
@@ -350,6 +460,7 @@ document.getElementById('taskForm').addEventListener('submit', async (event) => 
       detalhes: document.getElementById('taskDetails').value,
       responsavelUsername: document.getElementById('taskAssignee').value,
       dataPrevista: document.getElementById('taskDueDate').value,
+      frequencia: document.getElementById('taskFrequency').value,
     });
     form.reset();
     document.getElementById('taskDueDate').value = getLocalDateInputValue();
@@ -390,6 +501,18 @@ async function loadToday() {
   const config = await ipcRenderer.invoke('app:config');
   companyName = config.company.name || 'a loja';
   const data = await ipcRenderer.invoke('hoje:resumo');
+  const taskContext = await ipcRenderer.invoke('hoje:tasks-context');
+  isOwner = Boolean(taskContext.isOwner);
+  document.getElementById('collectionTemplatePanel').hidden = !taskContext.isOwner;
+  try {
+    collectionTemplate = await ipcRenderer.invoke('hoje:collection-template') || collectionTemplate;
+  } catch (error) {
+    console.error('Não foi possível carregar a mensagem padrão de cobrança:', error);
+  }
+  if (taskContext.isOwner && !collectionTemplateLoaded) {
+    document.getElementById('collectionTemplateInput').value = collectionTemplate;
+    collectionTemplateLoaded = true;
+  }
   setText('salesToday', String(data.quantidadeVendasHoje || 0));
   setText('lateCount', String(data.totalAtrasados || 0));
   setText('attentionCount', String(data.totalAtencao || 0));
@@ -410,6 +533,23 @@ document.getElementById('refreshButton').addEventListener('click', () => {
     console.error(err);
     alert('Não foi possível atualizar a tela Hoje.');
   });
+});
+
+document.getElementById('saveCollectionTemplate').addEventListener('click', async (event) => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  try {
+    collectionTemplate = await ipcRenderer.invoke(
+      'hoje:collection-template-save',
+      document.getElementById('collectionTemplateInput').value,
+    );
+    await loadToday();
+    setText('collectionNotice', 'Mensagem padrão salva. Os próximos rascunhos usarão este texto.');
+  } catch (error) {
+    setText('collectionNotice', error.message || 'Não foi possível salvar a mensagem padrão.');
+  } finally {
+    button.disabled = false;
+  }
 });
 
 document.getElementById('openCashGateForm').addEventListener('submit', async (event) => {

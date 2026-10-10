@@ -4,23 +4,20 @@ let clients = [];
 let settings = null;
 const byId = (id) => document.getElementById(id);
 const money = (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-const date = (value) => value ? new Date(`${value}T00:00:00`).toLocaleDateString('pt-BR') : 'Sem vencimento';
-const labels = { atrasado: 'Em atraso', vence_hoje: 'Vence hoje', futuro: 'Futuro', sem_vencimento: 'Sem vencimento' };
+const date = (value) => value ? new Date(`${value}T00:00:00`).toLocaleDateString('pt-BR') : 'Sem registro';
+const labels = { atrasado: 'Em atraso (45+ dias)', atencao: 'Atenção (30–44 dias)', em_dia: 'Regular (até 29 dias)', sem_data: 'Sem data para calcular', sem_divida: 'Sem saldo' };
 const today = () => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; };
 const messageTemplates = {
-  atrasado: 'Olá, {nome}! Consta em nosso sistema um saldo pendente de {valor}, com vencimento em {vencimento}. Se já realizou o pagamento, por favor, desconsidere esta mensagem. Caso precise, entre em contato conosco.',
-  vence_hoje: 'Olá, {nome}! Hoje é a data prevista para o pagamento de {valor} referente à sua conta na {loja}. Caso já tenha pago, por favor, desconsidere esta mensagem.',
-  futuro: 'Olá, {nome}! Passando para lembrar que o pagamento de {valor} está previsto para {vencimento}. Qualquer dúvida, entre em contato com {loja}.',
+  atrasado: 'Olá, {nome}! Consta em nosso sistema um saldo pendente de {valor}. Se você já realizou o pagamento, por favor, desconsidere esta mensagem. Caso precise, estamos à disposição.',
   sem_vencimento: 'Olá, {nome}! Consta em nosso sistema um saldo pendente de {valor}. Caso precise, entre em contato com {loja}.'
 };
 
 function currentMessage(client) {
-  const templateKey = client.status === 'atrasado' ? 'atraso' : client.status === 'vence_hoje' ? 'vencimento'
-    : client.status === 'futuro' ? 'lembrete' : 'semVencimento';
+  const templateKey = client.status === 'atrasado' ? 'atraso' : 'semVencimento';
   const template = (settings && settings.draftTemplates && settings.draftTemplates[templateKey]) || messageTemplates[client.status] || messageTemplates.sem_vencimento;
-  const lateDays = client.data_vencimento ? Math.max(0, Math.floor((new Date(`${today()}T00:00:00`) - new Date(`${client.data_vencimento}T00:00:00`)) / 86400000)) : 0;
+  const lateDays = Math.max(0, Number(client.daysSinceReference || 0) - 44);
   return template.replace(/\{(nome|valor|vencimento|loja|dias_atraso)\}/g, (_match, key) => ({
-    nome: client.nome, valor: money(client.divida), vencimento: date(client.data_vencimento),
+    nome: client.nome, valor: money(client.divida), vencimento: date(client.referenceDate),
     loja: settings && settings.companyName || 'a loja', dias_atraso: String(lateDays),
   })[key]);
 }
@@ -33,11 +30,11 @@ function render() {
   const delay = byId('delayFilter').value;
   const list = clients.filter((client) => {
     const text = `${client.nome} ${client.telefone || ''}`.toLocaleLowerCase('pt-BR');
-    const daysLate = client.data_vencimento ? Math.floor((new Date(`${today()}T00:00:00`) - new Date(`${client.data_vencimento}T00:00:00`)) / 86400000) : 0;
+    const daysLate = Math.max(0, Number(client.daysSinceReference || 0) - 44);
     const delayMatch = delay === 'todos' || (daysLate > 0 && (delay === '1-7' ? daysLate <= 7 : delay === '8-30' ? daysLate >= 8 && daysLate <= 30 : daysLate >= 31));
     return (!term || text.includes(term)) && (state === 'todos' || client.status === state)
-      && (!from || (client.data_vencimento && client.data_vencimento >= from))
-      && (!to || (client.data_vencimento && client.data_vencimento <= to)) && delayMatch;
+      && (!from || (client.referenceDate && client.referenceDate >= from))
+      && (!to || (client.referenceDate && client.referenceDate <= to)) && delayMatch;
   });
   const tbody = byId('clientRows');
   tbody.replaceChildren();
@@ -51,7 +48,7 @@ function render() {
     checkbox.type = 'radio'; checkbox.name = 'selectedClient'; checkbox.value = String(client.id); checkbox.setAttribute('aria-label', `Selecionar ${client.nome}`); select.appendChild(checkbox);
     const name = document.createElement('td'); name.textContent = client.nome;
     const balance = document.createElement('td'); balance.textContent = money(client.divida);
-    const due = document.createElement('td'); due.textContent = date(client.data_vencimento);
+    const due = document.createElement('td'); due.textContent = date(client.referenceDate);
     const status = document.createElement('td'); const badge = document.createElement('span'); badge.className = `status ${client.status}`; badge.textContent = labels[client.status]; status.appendChild(badge);
     const phone = document.createElement('td'); phone.textContent = client.telefoneValido ? client.telefone : 'Telefone ausente/inválido';
     const consent = document.createElement('small'); consent.textContent = client.consent ? 'Consentimento registrado' : 'Sem consentimento registrado'; phone.appendChild(consent);
@@ -91,7 +88,6 @@ function populateSettings(value) {
   byId('draftDue').value = value.draftTemplates.vencimento || '';
   byId('draftOverdue').value = value.draftTemplates.atraso || '';
   byId('draftNoDue').value = value.draftTemplates.semVencimento || '';
-  byId('beforeDays').value = value.beforeDays ?? 3;
   byId('intervalDays').value = value.intervalDays ?? 7;
   byId('sendStart').value = value.sendStart || '09:00';
   byId('sendEnd').value = value.sendEnd || '18:00';
@@ -127,8 +123,10 @@ byId('previewButton').addEventListener('click', () => {
 byId('closePreview').addEventListener('click', () => byId('previewDialog').close());
 byId('draftButton').addEventListener('click', async () => {
   const client = selectedClient(); if (!client) return setNotice('Selecione um cliente primeiro.');
+  if (client.status !== 'atrasado') return setNotice('Só é possível preparar cobranças quando há saldo e passaram 45 dias desde a última compra fiada ou pagamento.');
+  if (!client.consent) return setNotice('Este cliente não autorizou mensagens pelo WhatsApp.');
   if (!client.telefoneValido) return setNotice('Este cliente não possui um telefone válido.');
-  try { await ipcRenderer.invoke('whatsapp:open-draft', { phone: client.telefone, message: currentMessage(client) }); setNotice('Conversa aberta com rascunho. A mensagem ainda não foi enviada.'); }
+  try { await ipcRenderer.invoke('whatsapp:open-draft', { clientId: client.id, message: currentMessage(client) }); setNotice('Conversa aberta com rascunho. A mensagem ainda não foi enviada.'); }
   catch (error) { showError(error); }
 });
 byId('integrationButton').addEventListener('click', async () => {
@@ -146,7 +144,7 @@ byId('settingsForm').addEventListener('submit', async (event) => {
       atraso: byId('templateOverdue').value, teste: byId('templateTest').value },
     draftTemplates: { lembrete: byId('draftReminder').value, vencimento: byId('draftDue').value,
       atraso: byId('draftOverdue').value, semVencimento: byId('draftNoDue').value },
-    beforeDays: byId('beforeDays').value, intervalDays: byId('intervalDays').value,
+    intervalDays: byId('intervalDays').value,
     sendStart: byId('sendStart').value, sendEnd: byId('sendEnd').value, dailyLimit: byId('dailyLimit').value,
     enabled: byId('apiEnabled').checked, testMode: byId('testMode').checked,
     clearToken: byId('clearToken').checked,

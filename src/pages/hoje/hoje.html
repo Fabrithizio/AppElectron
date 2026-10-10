@@ -65,7 +65,7 @@
     <section class="panel tasks-panel">
       <div class="panel-heading">
         <h2>Afazeres de hoje</h2>
-        <small>Tarefas atribuídas aparecem aqui; quem concluir confirma no próprio app.</small>
+        <small>Veja tarefas atrasadas e dos próximos 7 dias; quem concluir confirma no próprio app.</small>
       </div>
       <p id="tasksNotice" class="tasks-notice" role="status" aria-live="polite"></p>
       <form id="taskForm" class="task-form" hidden>
@@ -91,14 +91,31 @@
             <select id="taskAssignee" required></select>
           </label>
           <label>
-            Fazer até
+            Começar em
             <input id="taskDueDate" type="date" required>
+          </label>
+          <label>
+            Repetir
+            <select id="taskFrequency">
+              <option value="once">Só nesta data</option>
+              <option value="daily">Todos os dias</option>
+              <option value="weekdays">Dias úteis</option>
+              <option value="weekly">Toda semana</option>
+            </select>
           </label>
         </div>
         <label class="task-details-label" for="taskDetails">Orientação (opcional)</label>
         <textarea id="taskDetails" maxlength="500" rows="2" placeholder="Algum detalhe para o funcionário?"></textarea>
         <button type="submit">Criar tarefa</button>
       </form>
+      <div class="task-controls">
+        <div class="task-filters" role="group" aria-label="Filtrar tarefas">
+          <button type="button" class="task-filter is-active" data-task-filter="pending" aria-pressed="true">Pendentes</button>
+          <button type="button" class="task-filter" data-task-filter="completed" aria-pressed="false">Concluídas</button>
+          <button type="button" class="task-filter" data-task-filter="all" aria-pressed="false">Todas</button>
+        </div>
+        <span id="taskCount" class="task-count" aria-live="polite"></span>
+      </div>
       <div id="taskList" class="task-list"></div>
     </section>
 
@@ -109,6 +126,12 @@
           <small>Prepare a mensagem no WhatsApp e confirme aqui depois de enviá-la.</small>
         </div>
         <p id="collectionNotice" class="collection-notice" role="status" aria-live="polite"></p>
+        <details id="collectionTemplatePanel" class="collection-template-panel" hidden>
+          <summary>Editar mensagem padrão de cobrança</summary>
+          <p>Use {nome}, {loja}, {valor}, {dias_atraso} e {data_referencia}. Atraso começa em 45 dias sem pagamento ou nova compra fiada. De 30 a 44 dias, o cliente aparece em atenção.</p>
+          <textarea id="collectionTemplateInput" maxlength="1500" rows="5" aria-label="Mensagem padrão de cobrança"></textarea>
+          <button id="saveCollectionTemplate" type="button">Salvar mensagem padrão</button>
+        </details>
         <section class="collection-group" aria-labelledby="overdueHeading">
           <h3 id="overdueHeading">Em atraso <span id="overdueMessageCount">0</span></h3>
           <div id="overdueList" class="list"></div>
