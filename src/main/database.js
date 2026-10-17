@@ -3,6 +3,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const sqlite3 = require('sqlite3').verbose();
 const { whatsappEventsSchemaSql } = require('./whatsapp-schema');
+const { migrateWhatsAppDefault } = require('./whatsapp-preference-migration');
 
 const projectRoot = path.resolve(__dirname, '..', '..');
 const databasePath = path.join(projectRoot, 'Banco_dados.db');
@@ -67,7 +68,8 @@ async function backupBeforeWhatsAppMigration() {
   const eventColumns = migration ? await all('PRAGMA table_info(WhatsAppEnvios)') : [];
   if (columns.some((column) => column.name === 'data_vencimento')
     && columns.some((column) => column.name === 'whatsapp_opt_in')
-    && migration && eventColumns.some((column) => column.name === 'data_vencimento')) return;
+    && migration && eventColumns.some((column) => column.name === 'data_vencimento')
+    && await get("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'WhatsAppPreferenceMigration'")) return;
   const backupDir = path.join(projectRoot, 'backups', 'schema-migrations');
   await fs.promises.mkdir(backupDir, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -320,7 +322,8 @@ async function initializeDatabase() {
   await ensureColumn('Produtos', 'localizacao', 'TEXT');
   await ensureColumn('Produtos', 'observacao', 'TEXT');
   await ensureColumn('Clientes', 'data_vencimento', 'TEXT');
-  await ensureColumn('Clientes', 'whatsapp_opt_in', 'INTEGER DEFAULT 0');
+  await ensureColumn('Clientes', 'whatsapp_opt_in', 'INTEGER DEFAULT 1');
+  await migrateWhatsAppDefault({ run, get });
   await run(whatsappEventsSchemaSql);
   await ensureColumn('WhatsAppEnvios', 'data_vencimento', 'TEXT');
 }
@@ -361,7 +364,7 @@ async function insertCliente(cliente, meta = {}) {
       normalizeMoney(cliente.divida),
       cliente.dataPagamento || null,
       cliente.data_vencimento || null,
-      cliente.whatsapp_opt_in ? 1 : 0,
+      cliente.whatsapp_opt_in === undefined || cliente.whatsapp_opt_in === true || Number(cliente.whatsapp_opt_in) === 1 ? 1 : 0,
     ],
   );
   await writeAuditLog({

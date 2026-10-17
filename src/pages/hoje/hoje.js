@@ -116,7 +116,7 @@ function addMessageEditor(item, { clientId, name, message, noticeId, row = null 
   openButton.textContent = 'Abrir WhatsApp';
   openButton.addEventListener('click', async () => {
     try {
-      await ipcRenderer.invoke('hoje:open-collection-draft', { clientId, phone, message: editor.value });
+      await ipcRenderer.invoke('hoje:open-collection-draft', { clientId, message: editor.value });
       setText(noticeId, `Conversa de ${name} aberta com o texto pronto. Confira e envie pelo WhatsApp.`);
     } catch (error) {
       setText(noticeId, error.message || 'Não foi possível abrir o WhatsApp.');
